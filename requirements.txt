@@ -1,2 +1,4 @@
+deepspeech==0.5.1
 Wave==0.0.2
 PyAudio==0.2.11
+pyperclip==1.7.0

@@ -1,3 +1,7 @@
+# Project specifics
+better_dictate.sublime-workspace.sublime-*
+deepspeech-0.5.1-models
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
