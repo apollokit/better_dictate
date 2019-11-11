@@ -2,6 +2,7 @@ Click==7.0
 deepspeech==0.5.1
 ipdb==0.12.2
 PyAudio==0.2.11
+pynput==1.4.5
 pyperclip==1.7.0
 PyYAML==5.1.2
 Wave==0.0.2

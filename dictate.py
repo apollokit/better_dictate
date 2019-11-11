@@ -7,6 +7,7 @@ import time
 import click 
 import numpy as np
 import pyaudio
+import pynput
 import wave
 
 from input_engine import DeepSpeechEngine
