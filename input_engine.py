@@ -5,6 +5,9 @@ a stream of decoded output for subsequent parsing
 import logging
 import time
 import yaml
+from typing import List
+
+import numpy as np
 
 from deepspeech import Model
 
@@ -14,7 +17,7 @@ logger.setLevel(logging.DEBUG)
 class InputEngine:
     pass
 
-class DeepSpeechEngine():
+class DeepSpeechEngine(InputEngine):
     """Based on Mozilla's DeepSpeech project
 
     This code largely stolen from deepspeech/client.py
@@ -57,4 +60,14 @@ class DeepSpeechEngine():
         model_load_end = time.time() - model_load_start
         logger.debug('Loaded model in {:.3}s.'.format(model_load_end))
 
-        print('loaded!')
+    def transform(self, audio: np.array , fs: int) -> str:
+        """ Transform audio to text
+        
+        Args:
+            audio: array of int16s representing the audio frames
+            fs: frames per second
+        
+        Returns:
+            The text output
+        """
+        return self._model.stt(audio, fs)
