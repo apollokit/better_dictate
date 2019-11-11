@@ -1,45 +1,68 @@
+""" Main script for the dictation tool
+"""
+
+import logging
+
+import click 
 import pyaudio
 import wave
 
-chunk = 1024  # Record in chunks of 1024 samples
-sample_format = pyaudio.paInt16  # 16 bits per sample
-channels = 1
-fs = 16000   # Record at 16k samples per second
-seconds = 3
-filename = "output.wav"
+from input_engine import DeepSpeechEngine
 
-p = pyaudio.PyAudio()  # Create an interface to PortAudio
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
-print('Recording')
+@click.group()
+def cli():
+    pass
 
-stream = p.open(format=sample_format,
-                channels=channels,
-                rate=fs,
-                frames_per_buffer=chunk,
-                input=True)
+@cli.command()
+def go():
 
-frames = []  # Initialize array to store frames
+    engine = DeepSpeechEngine('config_deepspeech.yaml')
 
-# Store data in chunks for 3 seconds
-for i in range(0, int(fs / chunk * seconds)):
-    data = stream.read(chunk)
-    frames.append(data)
 
-# Stop and close the stream 
-stream.stop_stream()
-stream.close()
-# Terminate the PortAudio interface
-p.terminate()
+    # chunk = 1024  # Record in chunks of 1024 samples
+    # sample_format = pyaudio.paInt16  # 16 bits per sample
+    # channels = 1
+    # fs = 16000   # Record at 16k samples per second
+    # seconds = 3
+    # filename = "output.wav"
 
-print('Finished recording')
+    # p = pyaudio.PyAudio()  # Create an interface to PortAudio
 
-# Save the recorded data as a WAV file
-wf = wave.open(filename, 'wb')
-wf.setnchannels(channels)
-wf.setsampwidth(p.get_sample_size(sample_format))
-wf.setframerate(fs)
-wf.writeframes(b''.join(frames))
-wf.close()
+    # print('Recording')
 
-print(f'File written: {filename}')
+    # stream = p.open(format=sample_format,
+    #                 channels=channels,
+    #                 rate=fs,
+    #                 frames_per_buffer=chunk,
+    #                 input=True)
 
+    # frames = []  # Initialize array to store frames
+
+    # # Store data in chunks for 3 seconds
+    # for i in range(0, int(fs / chunk * seconds)):
+    #     data = stream.read(chunk)
+    #     frames.append(data)
+
+    # # Stop and close the stream 
+    # stream.stop_stream()
+    # stream.close()
+    # # Terminate the PortAudio interface
+    # p.terminate()
+
+    # print('Finished recording')
+
+    # # Save the recorded data as a WAV file
+    # wf = wave.open(filename, 'wb')
+    # wf.setnchannels(channels)
+    # wf.setsampwidth(p.get_sample_size(sample_format))
+    # wf.setframerate(fs)
+    # wf.writeframes(b''.join(frames))
+    # wf.close()
+
+    # print(f'File written: {filename}')
+
+if __name__ == '__main__':
+    cli()

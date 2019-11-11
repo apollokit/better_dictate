@@ -1,0 +1,2 @@
+model: ./deepspeech-0.5.1-models/output_graph.pb 
+alphabet: ./deepspeech-0.5.1-models/alphabet.txt 
