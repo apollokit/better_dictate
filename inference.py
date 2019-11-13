@@ -1,5 +1,5 @@
-""" Contains the input engine backend that converts raw input (audio, video) to
-a stream of decoded output for subsequent parsing
+""" Contains the inference engine backend that converts raw input (audio, video)
+to a stream of decoded output for subsequent parsing
 """
 
 import logging
@@ -8,16 +8,17 @@ import yaml
 from typing import List
 
 import numpy as np
+from nptyping import Array
 
 from deepspeech import Model
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-class InputEngine:
+class InferenceEngine:
     pass
 
-class DeepSpeechEngine(InputEngine):
+class DeepSpeechEngine(InferenceEngine):
     """Based on Mozilla's DeepSpeech project
 
     This code largely stolen from deepspeech/client.py
@@ -60,7 +61,7 @@ class DeepSpeechEngine(InputEngine):
         model_load_end = time.time() - model_load_start
         logger.debug('Loaded model in {:.3}s.'.format(model_load_end))
 
-    def transform(self, audio: np.array , fs: int) -> str:
+    def transform(self, audio: Array[np.int16], fs: int) -> str:
         """ Transform audio to text
         
         Args:

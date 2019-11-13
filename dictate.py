@@ -1,33 +1,25 @@
 """ Main script for the dictation tool
 """
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import partial
 import logging
 import time
+import threading
+import queue
 
 import click 
 import numpy as np
-import pyaudio
-import pynput
+from nptyping import Array
+from pynput import keyboard
 import wave
 
-from input_engine import DeepSpeechEngine
+from keyboard import keyboard_on_press, keyboard_on_release
+from audio import audio_thread, read_audio_from_file
+from inference import DeepSpeechEngine
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-
-def read_audio_from_file(audio_file: str) -> np.array:
-    """From deepspeech/client.py    
-    """
-    fin = wave.open(audio_file, 'rb')
-    fs = fin.getframerate()
-    if fs != 16000:
-        raise Error('Warning: original sample rate ({}) is different than 16kHz.'
-            'Resampling might produce erratic speech recognition.'.format(fs))
-    else:
-        audio = np.frombuffer(fin.readframes(fin.getnframes()), np.int16)
-        audio_length = fin.getnframes() * (1/16000)
-        fin.close()
-        return audio, audio_length
 
 @click.group()
 def cli():
@@ -40,16 +32,9 @@ def cli():
 def go(
     audio_file: str
     ):
+    logging.info('Starting up')
 
-    chunk = 1024  # Record in chunks of 1024 samples
-    sample_format = pyaudio.paInt16  # 16 bits per sample
-    channels = 1
-    fs = 16000   # Record at 16k samples per second
-    seconds = 3
-    filename = "output.wav"
-
-
-    engine = DeepSpeechEngine('config_deepspeech.yaml')
+    # engine = DeepSpeechEngine('config_deepspeech.yaml')
 
     # if we're just doing speech to text on an input audio file
     if audio_file is not None:
@@ -62,39 +47,37 @@ def go(
         print(f"Took {end - start:.2f}s for stt on {audio_length:.2f}s input")
         return
 
+    # interactive stuff
 
-    p = pyaudio.PyAudio()  # Create an interface to PortAudio
+    # data structures for inter-thread communication
+    # event that signals start/stop for capturing audio
+    audio_ctrl = threading.Event()
+    # queue for captured audio frames
+    audio_frames_q = queue.Queue
 
-    print('Recording')
+    keyb_listener = keyboard.Listener(
+        on_press=keyboard_on_press,
+        on_release=partial(keyboard_on_release, audio_ctrl))
 
-    stream = p.open(format=sample_format,
-                    channels=channels,
-                    rate=fs,
-                    frames_per_buffer=chunk,
-                    input=True)
+    keyb_listener.start()
 
-    frames = []  # Initialize array to store frames
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        futures = []
+        futures.append(executor.submit(
+            audio_thread, 
+            audio_ctrl, 
+            audio_frames_q))
+        for future in as_completed(futures):
+            logger.debug(repr(future.exception()))
 
-    # Store data in chunks for 3 seconds
-    for i in range(0, int(fs / chunk * seconds)):
-        data = stream.read(chunk)
-        frames.append(data)
 
-    # Stop and close the stream 
-    stream.stop_stream()
-    stream.close()
-    # Terminate the PortAudio interface
-    p.terminate()
-
-    print('Finished recording')
-
-    start = time.time()
-    # text = engine.transform(frames, fs)
-    frames = np.frombuffer(b''.join(frames), np.int16)
-    out = engine._model.stt(frames, fs)
-    print(out)
-    end = time.time()
-    print(f"Took {end - start} seconds")
+    # start = time.time()
+    # # text = engine.transform(frames, fs)
+    # frames = np.frombuffer(b''.join(frames), np.int16)
+    # out = engine._model.stt(frames, fs)
+    # print(out)
+    # end = time.time()
+    # print(f"Took {end - start} seconds")
 
     # # Save the recorded data as a WAV file
     # wf = wave.open(/home/kit/Desktop/projects/better_dictate/audio/2830-3980-0043.wav, 'wb')
