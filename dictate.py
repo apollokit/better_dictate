@@ -14,7 +14,7 @@ from nptyping import Array
 from pynput import keyboard
 import wave
 
-from keyboard import keyboard_on_press, keyboard_on_release
+from keyboard import keyboard_audio_event, keyb_listener
 from audio import audio_thread, read_audio_from_file
 from inference import DeepSpeechEngine
 
@@ -50,14 +50,8 @@ def go(
     # interactive stuff
 
     # data structures for inter-thread communication
-    # event that signals start/stop for capturing audio
-    audio_ctrl = threading.Event()
     # queue for captured audio frames
-    audio_frames_q = queue.Queue
-
-    keyb_listener = keyboard.Listener(
-        on_press=keyboard_on_press,
-        on_release=partial(keyboard_on_release, audio_ctrl))
+    audio_frames_q = queue.Queue()
 
     keyb_listener.start()
 
@@ -65,7 +59,7 @@ def go(
         futures = []
         futures.append(executor.submit(
             audio_thread, 
-            audio_ctrl, 
+            keyboard_audio_event, 
             audio_frames_q))
         for future in as_completed(futures):
             logger.debug(repr(future.exception()))

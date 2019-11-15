@@ -37,34 +37,34 @@ def audio_thread(
     # the main thread loop. Go forever.
     while True:
         if audio_ctrl.is_set():
-            print('testing')
-            # # only start recording once the control signal is sent
-            # logger.info('Recording')
-            # stream = p.open(format=sample_format,
-            #     channels=channels,
-            #     rate=fs,
-            #     frames_per_buffer=chunk,
-            #     input=True)
+            # only start recording once the control signal is sent
+            logger.info('Recording')
+            stream = p.open(format=sample_format,
+                channels=channels,
+                rate=fs,
+                frames_per_buffer=chunk,
+                input=True)
             
-            # # Initialize array to store frames. 
-            # frames: Array[np.int16] = []
+            # Initialize array to store frames. 
+            frames: Array[np.int16] = []
             
-            # # Store data in chunks for as long as the control signal is on
-            # while audio_ctrl.is_set():
-            #     data = stream.read(chunk)
-            #     frames.append(data)
+            # Store data in chunks for as long as the control signal is on
+            while audio_ctrl.is_set():
+                data = stream.read(chunk)
+                frames.append(data)
 
-            # # Stop and close the stream 
-            # stream.stop_stream()
-            # stream.close()
-            # # Terminate the PortAudio interface
-            # p.terminate()
+            # Stop and close the stream 
+            stream.stop_stream()
+            stream.close()
 
-            # logger.info('Finished recording')
-            # audio_frames_q.put(frames)
+            logger.info('Finished recording')
+            audio_frames_q.put(frames)
 
         # 40 msec seems like a good wait time
         time.sleep(0.040)
+
+    # Terminate the PortAudio interface
+    p.terminate()
 
 def read_audio_from_file(audio_file: str) -> Array[np.int16]:
     """Reads audio from a .wav file
