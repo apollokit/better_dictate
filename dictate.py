@@ -16,7 +16,7 @@ import wave
 
 from keyboard import keyboard_audio_event, keyb_listener
 from audio import audio_thread, read_audio_from_file
-from inference import DeepSpeechEngine
+from inference import inference_thread
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -34,8 +34,6 @@ def go(
     ):
     logging.info('Starting up')
 
-    # engine = DeepSpeechEngine('config_deepspeech.yaml')
-
     # if we're just doing speech to text on an input audio file
     if audio_file is not None:
         audio, audio_length = read_audio_from_file(audio_file)
@@ -52,26 +50,24 @@ def go(
     # data structures for inter-thread communication
     # queue for captured audio frames
     audio_frames_q = queue.Queue()
+    # inference (text) outputs
+    inference_output_q = queue.Queue()
 
     keyb_listener.start()
 
-    with ThreadPoolExecutor(max_workers=1) as executor:
+    with ThreadPoolExecutor(max_workers=2) as executor:
         futures = []
         futures.append(executor.submit(
             audio_thread, 
             keyboard_audio_event, 
             audio_frames_q))
+        futures.append(executor.submit(
+            inference_thread, 
+            audio_frames_q,
+            inference_output_q))
         for future in as_completed(futures):
             logger.debug(repr(future.exception()))
 
-
-    # start = time.time()
-    # # text = engine.transform(frames, fs)
-    # frames = np.frombuffer(b''.join(frames), np.int16)
-    # out = engine._model.stt(frames, fs)
-    # print(out)
-    # end = time.time()
-    # print(f"Took {end - start} seconds")
 
     # # Save the recorded data as a WAV file
     # wf = wave.open(/home/kit/Desktop/projects/better_dictate/audio/2830-3980-0043.wav, 'wb')

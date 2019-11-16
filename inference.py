@@ -1,74 +1,49 @@
-""" Contains the inference engine backend that converts raw input (audio, video)
-to a stream of decoded output for subsequent parsing
+""" Thread and utilities for audio input.
 """
 
 import logging
 import time
-import yaml
-from typing import List
+import queue
 
 import numpy as np
 from nptyping import Array
 
-from deepspeech import Model
+from stt import DeepSpeechEngine
+from audio import FS, AudioFramesQentry
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-class InferenceEngine:
-    pass
-
-class DeepSpeechEngine(InferenceEngine):
-    """Based on Mozilla's DeepSpeech project
-
-    This code largely stolen from deepspeech/client.py
-    """
+def inference_thread(
+        audio_frames_q: queue.Queue,
+        inference_output_q: queue.Queue):
+    """ Execution thread for inference on raw inputs
     
-    # These constants control the beam search decoder
-    # Beam width used in the CTC decoder when building candidate transcriptions
-    BEAM_WIDTH = 500
-    # The alpha hyperparameter of the CTC decoder. Language Model weight
-    LM_ALPHA = 0.75
-    # The beta hyperparameter of the CTC decoder. Word insertion bonus.
-    LM_BETA = 1.85
+    Waits for audio frames to be put in the queue, then processes them (speech
+    to text) and puts them on the output queue. For now, this queue contains
+    text output from the speech to text engine.
 
-    # These constants are tied to the shape of the graph used (changing them changes
-    # the geometry of the first layer), so make sure you use the same constants that
-    # were used during training
-    # Number of MFCC features to use
-    N_FEATURES = 26
-    # Size of the context window used for producing timesteps in the input vector
-    N_CONTEXT = 9
+    Args:
+        audio_frames_q: output queue for captured audio frames. Each entry is
+            a numpy Array[np.int16]
+        inference_output_q: contains output string text from the text to speech
+            engine.
+    """
 
-    def __init__(self, config_file: str):
-        """init
+    logger.info(f"Starting DeepSpeechEngine")
+    engine = DeepSpeechEngine('config_deepspeech.yaml')
+    # the main thread loop. Go forever.
+    while True:
+        logger.info(f"DeepSpeechEngine ready")
+        q_entry: AudioFramesQentry = audio_frames_q.get(block=True)
+        logger.debug(f"Got frames from audio_frames_q")
+        start = time.time()
+        frames = np.frombuffer(b''.join(q_entry.frames), np.int16)
+        text = engine.transform(frames, FS)
+        logger.debug(text)
+        end = time.time()
+        logger.debug(f"Took {end - start:0.2f} seconds for "
+            f"{q_entry.duration:0.2f} audio")
         
-        Args:
-            config_file: path to the YAML config file
-        """
-        super(DeepSpeechEngine, self).__init__()
+        inference_output_q.put(text)
 
-        with open(config_file, 'r') as f:
-            config = yaml.load(f)
-        # load the 
-        logger.debug('Loading model from file {}'.format(config['model']))
-        model_load_start = time.time()
-        self._model = Model(config['model'], 
-            DeepSpeechEngine.N_FEATURES, 
-            DeepSpeechEngine.N_CONTEXT, 
-            config['alphabet'], 
-            DeepSpeechEngine.BEAM_WIDTH)
-        model_load_end = time.time() - model_load_start
-        logger.debug('Loaded model in {:.3}s.'.format(model_load_end))
-
-    def transform(self, audio: Array[np.int16], fs: int) -> str:
-        """ Transform audio to text
-        
-        Args:
-            audio: array of int16s representing the audio frames
-            fs: frames per second
-        
-        Returns:
-            The text output
-        """
-        return self._model.stt(audio, fs)

@@ -13,11 +13,17 @@ import pyaudio
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-chunk = 1024  # Record in chunks of 1024 samples
-sample_format = pyaudio.paInt16  # 16 bits per sample
-channels = 1 # record in mono
-fs = 16000   # Record at 16k samples per second
+CHUNK = 1024  # Record in chunks of 1024 samples
+SAMPLE_FORMAT = pyaudio.paInt16  # 16 bits per sample
+CHANNELS = 1 # record in mono
+FS = 16000   # Record at 16k samples per second
 
+class AudioFramesQentry():
+     """docstring for AudioFramesQentry"""
+     def __init__(self, frames: Array[np.int16], duration: float):
+         self.frames = frames
+         self.duration = duration
+          
 def audio_thread(
         audio_ctrl: threading.Event,
         audio_frames_q: queue.Queue):
@@ -39,26 +45,30 @@ def audio_thread(
         if audio_ctrl.is_set():
             # only start recording once the control signal is sent
             logger.info('Recording')
-            stream = p.open(format=sample_format,
-                channels=channels,
-                rate=fs,
-                frames_per_buffer=chunk,
+            stream = p.open(format=SAMPLE_FORMAT,
+                channels=CHANNELS,
+                rate=FS,
+                frames_per_buffer=CHUNK,
                 input=True)
             
             # Initialize array to store frames. 
             frames: Array[np.int16] = []
             
             # Store data in chunks for as long as the control signal is on
+            start = time.time()
             while audio_ctrl.is_set():
-                data = stream.read(chunk)
+                data = stream.read(CHUNK)
                 frames.append(data)
+            end = time.time()
 
             # Stop and close the stream 
             stream.stop_stream()
             stream.close()
 
             logger.info('Finished recording')
-            audio_frames_q.put(frames)
+            audio_frames_q.put(
+                AudioFramesQentry(frames, end-start)
+            )
 
         # 40 msec seems like a good wait time
         time.sleep(0.040)
@@ -82,10 +92,10 @@ def read_audio_from_file(audio_file: str) -> Array[np.int16]:
         Error: [description]
     """
     fin = wave.open(audio_file, 'rb')
-    fs = fin.getframerate()
-    if fs != 16000:
+    FS = fin.getframerate()
+    if FS != 16000:
         raise Error('Warning: original sample rate ({}) is different than 16kHz.'
-            'Resampling might produce erratic speech recognition.'.format(fs))
+            'Resampling might produce erratic speech recognition.'.format(FS))
     else:
         audio = np.frombuffer(fin.readframes(fin.getnframes()), np.int16)
         audio_length = fin.getnframes() * (1/16000)
