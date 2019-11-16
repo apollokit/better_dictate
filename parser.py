@@ -26,11 +26,21 @@ def parser_thread(
     logger.info(f"Parser ready")
     while True:
         try:
-            q_entry: str = inference_output_q.get(
+            the_text: str = inference_output_q.get(
                 block=True, timeout=0.1)
             
-            logger.debug(f"Got text from queue: {q_entry}")
-            keyboard_ctlr.type(q_entry)
+            logger.debug(f"Got text from queue: {the_text}")
+            
+            the_text = the_text.lower()
+            the_text = the_text.replace(' coma',',')
+            the_text = the_text.replace('coma',',')
+            the_text = the_text.replace(' comma',',')
+            the_text = the_text.replace('comma',',')
+            the_text = the_text.replace(' period','.')
+            the_text = the_text.replace('period','.')
+            the_text = the_text.capitalize()
+
+            keyboard_ctlr.type(the_text)
             
         # queue was empty up to timeout
         except Empty:
