@@ -18,6 +18,7 @@ from dictate_globals import shutdown_event
 from keyboard import keyboard_audio_event, keyb_listener
 from audio import audio_thread, read_audio_from_file
 from inference import inference_thread
+from parser import parser_thread
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -56,7 +57,7 @@ def go(
 
     keyb_listener.start()
 
-    with ThreadPoolExecutor(max_workers=2) as executor:
+    with ThreadPoolExecutor(max_workers=3) as executor:
         futures = []
         futures.append(executor.submit(
             audio_thread, 
@@ -66,6 +67,10 @@ def go(
         futures.append(executor.submit(
             inference_thread, 
             audio_frames_q,
+            inference_output_q,
+            shutdown_event))
+        futures.append(executor.submit(
+            parser_thread,
             inference_output_q,
             shutdown_event))
         # if not shutdown_event.is_set():
