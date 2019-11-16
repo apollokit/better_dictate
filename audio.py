@@ -4,7 +4,7 @@
 import logging
 import threading
 import time
-import queue
+from queue import Queue
 
 import numpy as np
 from nptyping import Array
@@ -26,7 +26,8 @@ class AudioFramesQentry():
           
 def audio_thread(
         audio_ctrl: threading.Event,
-        audio_frames_q: queue.Queue):
+        audio_frames_q: Queue,
+        shutdown_event: threading.Event):
     """ Execution thread for audio input
     
     Waits for the audio_ctrl event to be set and then reads frames for as long as it
@@ -36,12 +37,16 @@ def audio_thread(
         audio_ctrl: when set, audio frame will be read in
         audio_frames_q: output queue for captured frames. Each entry will be a
             numpy Array[np.int16]
+        shutdown_event: event used to signal shutdown across threads
     """
 
     p = pyaudio.PyAudio()  # Create an interface to PortAudio
 
     # the main thread loop. Go forever.
     while True:
+        # check if it's time to close shop
+        if shutdown_event.is_set(): 
+            break
         if audio_ctrl.is_set():
             # only start recording once the control signal is sent
             logger.info('Recording')

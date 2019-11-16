@@ -14,6 +14,7 @@ from nptyping import Array
 from pynput import keyboard
 import wave
 
+from dictate_globals import shutdown_event
 from keyboard import keyboard_audio_event, keyb_listener
 from audio import audio_thread, read_audio_from_file
 from inference import inference_thread
@@ -60,11 +61,14 @@ def go(
         futures.append(executor.submit(
             audio_thread, 
             keyboard_audio_event, 
-            audio_frames_q))
+            audio_frames_q,
+            shutdown_event))
         futures.append(executor.submit(
             inference_thread, 
             audio_frames_q,
-            inference_output_q))
+            inference_output_q,
+            shutdown_event))
+        # if not shutdown_event.is_set():
         for future in as_completed(futures):
             logger.debug(repr(future.exception()))
 
