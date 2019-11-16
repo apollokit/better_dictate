@@ -20,12 +20,16 @@ HOTKEY_LET = 'z'
 
 keyboard_ctrlr = Controller()
 
+# counts up till quit/shutdown condition is met
 quit_counter = 0
-QUIT_COUNT = 3
+QUIT_COUNT = 3 
+
+# true once the modifier gets pressed
+hotkey_primed = False
 
 def on_press(key: keyboard.KeyCode):
-    pass
     # print('Key {} pressed.'.format(key))
+    pass
 
 def on_release(
     key: keyboard.KeyCode):
@@ -38,12 +42,12 @@ def on_release(
         Usually nothing, but False when the thread should be shut down
     """
     global quit_counter
-    # logging.debug('Key {} released.'.format(key))
-    # if HOTKEY_MOD == 'alt' and keyboard_ctrlr.alt_pressed:
-        # print('yo')
-        # note the escaped quotes. We're checking if the string 
-        # is "'<letter>'"
-    if str(key) == f"\'{HOTKEY_LET}\'":
+    global hotkey_primed
+
+    # note the escaped quotes. We're checking if the string 
+    # is "'<letter>'"
+    if hotkey_primed and str(key) == f"\'{HOTKEY_LET}\'":
+        hotkey_primed = False
         logger.debug(f'Saw hotkey')
         if not keyboard_audio_event.is_set():
             logger.debug('setting keyboard_audio_event')
@@ -51,15 +55,21 @@ def on_release(
         else:
             logger.debug('releasing keyboard_audio_event')
             keyboard_audio_event.clear()
-    if str(key) == 'Key.esc':
+    # when pressing modifier + HOTKEY_LET, for some reason there's an on_release
+    # for the modifier before the HOTKEY_LET. So just prime it here
+    elif HOTKEY_MOD == 'alt' and str(key) == 'Key.alt_r':
+        hotkey_primed = True
+    elif str(key) == 'Key.esc':
         quit_counter += 1
         if quit_counter >= QUIT_COUNT:
             logger.debug('Exiting keyboard thread...')
             keyboard_audio_event.clear()
             shutdown_event.set()
             return False
+    else:
+        hotkey_primed = False
 
 keyb_listener = keyboard.Listener(
-    press=on_press,
+    on_press=on_press,
     on_release=on_release)
 
