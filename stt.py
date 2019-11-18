@@ -58,6 +58,12 @@ class DeepSpeechEngine(STTEngine):
             DeepSpeechEngine.N_CONTEXT, 
             config['alphabet'], 
             DeepSpeechEngine.BEAM_WIDTH)
+        self._model.enableDecoderWithLM(
+            config['alphabet'], 
+            config['lm'], 
+            config['trie'], 
+            DeepSpeechEngine.LM_ALPHA, 
+            DeepSpeechEngine.LM_BETA)
         model_load_end = time.time() - model_load_start
         logger.debug('Loaded model in {:.3}s.'.format(model_load_end))
 

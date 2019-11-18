@@ -1,2 +1,4 @@
-model: ./deepspeech-0.5.1-models/output_graph.pb 
-alphabet: ./deepspeech-0.5.1-models/alphabet.txt 
+model: ./deepspeech-0.5.1-models/output_graph.pb
+alphabet: ./deepspeech-0.5.1-models/alphabet.txt
+lm: ./deepspeech-0.5.1-models/lm.binary 
+trie: ./deepspeech-0.5.1-models/trie

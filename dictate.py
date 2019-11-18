@@ -36,8 +36,8 @@ def cli():
     help="Path to an audio file. If provided, inference will be run on it and"
     "then the script will exit.")
 @click.option("--inference_output_file", type=str,
-    default="inference_output.txt",
-    help="Path of file in which to store benchmark output from"
+    default="inference_output.json",
+    help="Path of json file in which to store benchmark output from"
         "inference")
 def go(
     audio_file: str,
