@@ -20,6 +20,10 @@ from audio import audio_thread, read_audio_from_file
 from inference import inference_thread
 from parser import parser_thread
 
+form = "%(asctime)s %(levelname)-8s %(name)-15s %(message)s"
+logging.basicConfig(format=form,
+                    datefmt="%H:%M:%S")
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -31,8 +35,13 @@ def cli():
 @click.option("--audio_file", type=str, default=None,
     help="Path to an audio file. If provided, inference will be run on it and"
     "then the script will exit.")
+@click.option("--inference_output_file", type=str,
+    default="inference_output.txt",
+    help="Path of file in which to store benchmark output from"
+        "inference")
 def go(
-    audio_file: str
+    audio_file: str,
+    inference_output_file: str
     ):
     logging.info('Starting up')
 
@@ -68,14 +77,15 @@ def go(
             inference_thread, 
             audio_frames_q,
             inference_output_q,
-            shutdown_event))
+            shutdown_event,
+            inference_output_file))
         futures.append(executor.submit(
             parser_thread,
             inference_output_q,
             shutdown_event))
         # if not shutdown_event.is_set():
         for future in as_completed(futures):
-            logger.debug(repr(future.exception()))
+            logger.debug(f"Thread exit: {repr(future.exception())}")
 
 
     # # Save the recorded data as a WAV file

@@ -1,6 +1,7 @@
 # Project specifics
 better_dictate.sublime-workspace.sublime-*
 deepspeech-0.5.1-models
+inference_output*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
