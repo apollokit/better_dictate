@@ -22,6 +22,8 @@ class DeepSpeechEngine(STTEngine):
     """Based on Mozilla's DeepSpeech project
 
     This code largely stolen from deepspeech/client.py
+
+    Assumes 16 kHz mono audio input
     """
     
     # These constants control the beam search decoder
@@ -78,3 +80,26 @@ class DeepSpeechEngine(STTEngine):
             The text output
         """
         return self._model.stt(audio, fs)
+
+    def new_stream(self):
+        """Create a new stream to which to feed audio frames continuously for inference        
+        """
+        self._stream_context = self._model.setupStream()
+
+    def feed_stream(self, frame: Array[np.int16]):
+        """Feed audio frame to the stream
+        
+        Args:
+            frame: audio frame
+        """
+        self._model.feedAudioContent(
+            self._stream_context, 
+            np.frombuffer(frame, np.int16))
+
+    def end_stream(self) -> str:
+        """Finish the stream and return the infered content
+        
+        Returns:
+            the text output
+        """
+        return self._model.finishStream(self._stream_context)

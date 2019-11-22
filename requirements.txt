@@ -7,3 +7,5 @@ pynput==1.4.5
 pyperclip==1.7.0
 PyYAML==5.1.2
 Wave==0.0.2
+webrtcvad==2.0.10
+halo==0.0.28

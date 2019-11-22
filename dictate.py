@@ -14,11 +14,12 @@ from nptyping import Array
 from pynput import keyboard
 import wave
 
-from dictate_globals import shutdown_event
-from keyboard import keyboard_audio_event, keyb_listener
 from audio import audio_thread, read_audio_from_file
+from dictate_globals import shutdown_event
 from inference import inference_thread
+from keyboard import keyboard_audio_event, keyb_listener
 from parser import parser_thread
+from stt import DeepSpeechEngine
 
 form = "%(asctime)s %(levelname)-8s %(name)-15s %(message)s"
 logging.basicConfig(format=form,
@@ -47,10 +48,13 @@ def go(
 
     # if we're just doing speech to text on an input audio file
     if audio_file is not None:
+        engine = DeepSpeechEngine('config_deepspeech.yaml')
         audio, audio_length = read_audio_from_file(audio_file)
+        # assume 16 kHz
+        sample_rate = 16000
 
         start = time.time()
-        text = engine.transform(audio, fs)
+        text = engine.transform(audio, sample_rate)
         print(text)
         end = time.time()
         print(f"Took {end - start:.2f}s for stt on {audio_length:.2f}s input")
