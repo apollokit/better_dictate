@@ -39,7 +39,7 @@ def audio_thread(
     Args:
         audio_ctrl: when set, audio frame will be read in
         audio_frames_q: output queue for captured frames. Each entry will be a
-            numpy Array[np.int16], or None to indicate the end of an utterance
+             bytes, or None to indicate the end of an utterance
         shutdown_event: event used to signal shutdown across threads
     """
 
@@ -71,7 +71,7 @@ def audio_thread(
                 input=True)
             
             # Initialize array to store frames. 
-            frames: Array[np.int16] = []
+            frames: bytes = []
             # true if VAD has determined that we're speaking
             triggered = False
             
@@ -79,10 +79,10 @@ def audio_thread(
             # - continually collect audio
             # - when we've found speech, put that on the audio_frames_q
             # - break when audio_ctrl gets unset or we get the shutdown signal
-            start = time.time()
+            # start = time.time()
             while audio_ctrl.is_set() and not shutdown_event.is_set():
                 # read a frame
-                frame: Array[np.int16] = stream.read(CHUNK)
+                frame: bytes = stream.read(CHUNK)
                 # voice activity detection
                 is_speech = vad.is_speech(frame, SAMPLE_RATE)
                 # if VAD hasn't found speech yet
@@ -105,7 +105,10 @@ def audio_thread(
                         audio_frames_q.put(None)
                         ring_buffer.clear()
 
-            end = time.time()
+            # throw out a None to end the utterance for any consumers down the
+            # line (in case we stopped in the middle of an utterance)
+            audio_frames_q.put(None)
+            # end = time.time()
 
             # Stop and close the stream 
             stream.stop_stream()
@@ -119,7 +122,7 @@ def audio_thread(
     # Terminate the PortAudio interface
     p.terminate()
 
-def read_audio_from_file(audio_file: str) -> Array[np.int16]:
+def read_audio_from_file(audio_file: str) -> bytes:
     """Reads audio from a .wav file
     
     From deepspeech/client.py
@@ -129,7 +132,7 @@ def read_audio_from_file(audio_file: str) -> Array[np.int16]:
     
     Returns:
         [description]
-        Array[np.int16]
+        bytes
     
     Raises:
         Error: [description]

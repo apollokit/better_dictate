@@ -33,7 +33,7 @@ def inference_thread(
 
     Args:
         audio_frames_q: output queue for captured frames. Each entry will be a
-            numpy Array[np.int16], or None to indicate the end of an utterance
+            bytes, or None to indicate the end of an utterance
         inference_output_q: contains output string text from the text to speech
             engine.
         shutdown_event: event used to signal shutdown across threads
@@ -53,7 +53,7 @@ def inference_thread(
     engine.new_stream()
     while True:
         try:
-            frame: Optional[Array[np.int16]] = audio_frames_q.get(
+            frame: Optional[bytes] = audio_frames_q.get(
                 block=True, timeout=0.1)
             # while still getting frames in utterance
             if frame is not None:
@@ -80,6 +80,9 @@ def inference_thread(
         except Empty:
             # check if it's time to close shop
             if shutdown_event.is_set():
+                if spinner: spinner.stop()
+                # end the stream and throw out the text
+                engine.end_stream()
                 break
 
     logger.info(f"Writing inference output file {output_file}")

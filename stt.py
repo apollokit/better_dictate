@@ -68,6 +68,7 @@ class DeepSpeechEngine(STTEngine):
             DeepSpeechEngine.LM_BETA)
         model_load_end = time.time() - model_load_start
         logger.debug('Loaded model in {:.3}s.'.format(model_load_end))
+        self._streaming = False
 
     def transform(self, audio: Array[np.int16], fs: int) -> str:
         """ Transform audio to text
@@ -85,6 +86,7 @@ class DeepSpeechEngine(STTEngine):
         """Create a new stream to which to feed audio frames continuously for inference        
         """
         self._stream_context = self._model.setupStream()
+        self._streaming = True
 
     def feed_stream(self, frame: Array[np.int16]):
         """Feed audio frame to the stream
@@ -92,6 +94,8 @@ class DeepSpeechEngine(STTEngine):
         Args:
             frame: audio frame
         """
+        assert self._streaming
+        assert frame is not None
         self._model.feedAudioContent(
             self._stream_context, 
             np.frombuffer(frame, np.int16))
@@ -102,4 +106,7 @@ class DeepSpeechEngine(STTEngine):
         Returns:
             the text output
         """
-        return self._model.finishStream(self._stream_context)
+        if self._streaming:
+            return self._model.finishStream(self._stream_context)
+        else: 
+            return None
