@@ -38,7 +38,11 @@ def parser_thread(
             the_text = the_text.replace('comma',',')
             the_text = the_text.replace(' period','.')
             the_text = the_text.replace('period','.')
-            the_text = the_text.capitalize()
+            capital_word = 'capital'
+            if the_text.startswith(capital_word):
+                # +1 for the space
+                the_text = the_text[len(capital_word)+1:]
+                the_text = the_text.capitalize()
 
             keyboard_ctlr.type(the_text)
             
