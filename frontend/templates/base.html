@@ -1,0 +1,89 @@
+<!-- This is the template file that all other pages should be based on.
+     It includes boilerplate css and other stuff. -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    {% block head %}
+
+      <!-- https://getbootstrap.com/ -->
+      <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+
+      <!-- https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js -->
+      <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
+
+      <!-- https://code.jquery.com/jquery-3.3.1.slim.min.js -->
+      <script src="{{ url_for('static', filename='jquery-3.3.1.slim.min.js') }}"></script>
+
+      <!-- https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js -->
+      <script src="{{ url_for('static', filename='popper.min.js') }}"></script>
+
+      <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+      
+      <!-- https://reactjs.org 
+           https://unpkg.com/react-dom@16/umd/react.production.min.js 
+           https://unpkg.com/react-dom@16/umd/react-dom.production.min.js -->
+      <script src="{{ url_for('static', filename='react.production.min.js') }}"></script>
+      <script src="{{ url_for('static', filename='react-dom.production.min.js') }}"></script>
+
+      <!-- https://babeljs.io 
+           https://unpkg.com/babel-standalone@6/babel.min.js -->
+      <script src="{{ url_for('static', filename='babel.min.js') }}"></script>
+
+      <!-- custom css for the site -->
+      <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
+
+    {% endblock %}
+  </head>
+  <body>
+
+  <!-- Render the navbar at the top -->
+  <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
+    <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">Stockbot</a>
+    <ul class="navbar-nav px-3">
+      <!--<li class="nav-item text-nowrap">
+      <a class="nav-link" href="#">Sign out</a>
+    </li>-->
+    </ul>
+  </nav>
+
+  <!-- Render the sidebar -->
+  <div class="container-fluid">
+    <div class="row">
+      <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+        <div class="sidebar-sticky">
+          <ul class="nav flex-column">
+
+            <li class="nav-item">
+              <a class="nav-link {{ runsets_active }}" href="/runsets">
+                <span data-feather="home"></span>
+                RunSets
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link {{ greatest_hits_active }}" href="/runset/277">
+                <span data-feather="file"></span>
+                Stockbot's Greatest Hits
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link {{ hyperquests_active }}" href="/hyperquest">
+                <span data-feather="file"></span>
+                Hyperquests
+              </a>
+            </li>
+
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    {% block content %}{% endblock %}
+
+  </body>
+</html>
