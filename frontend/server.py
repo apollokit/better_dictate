@@ -18,6 +18,11 @@ def root():
 
 # "yo"
 @app.route('/yo')
-def hyperquest():
+def yo():
     return render_template(
         'yo.html')
+
+@app.route('/yo2')
+def yo2():
+    return render_template(
+        'yo2.html')
