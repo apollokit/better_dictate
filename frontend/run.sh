@@ -14,8 +14,9 @@ DIR=$(dirname $0)
 # Make sure we're in the right virtualenv.
 source $DIR/../source_virtualenv
 
-# Include the rest of the stockbot libraries so the site can use all that good stuff.
-export PYTHONPATH=$PYTHONPATH:$DIR/..:$DIR/../../lib
+# debug mode
+export FLASK_ENV=development 
+export FLASK_DEBUG=1
 
 # Run the server.
 cd $DIR
