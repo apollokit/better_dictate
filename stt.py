@@ -5,12 +5,11 @@ audio to a stream of decoded output for subsequent parsing
 import logging
 import time
 import yaml
-from typing import List
 
 import numpy as np
 from nptyping import Array
 
-from deepspeech import Model
+from deepspeech import Model, Stream
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -21,26 +20,17 @@ class STTEngine:
 class DeepSpeechEngine(STTEngine):
     """Based on Mozilla's DeepSpeech project
 
-    This code largely stolen from deepspeech/client.py
+    This code adapted from deepspeech/client.py
+
+    For context on the
+    model and scorer, see:
+    https://deepspeech.readthedocs.io/en/latest/USING.html
+
+    For API docs see:
+    https://deepspeech.readthedocs.io/en/latest/Python-API.html#model
 
     Assumes 16 kHz mono audio input
     """
-    
-    # These constants control the beam search decoder
-    # Beam width used in the CTC decoder when building candidate transcriptions
-    BEAM_WIDTH = 500
-    # The alpha hyperparameter of the CTC decoder. Language Model weight
-    LM_ALPHA = 0.75
-    # The beta hyperparameter of the CTC decoder. Word insertion bonus.
-    LM_BETA = 1.85
-
-    # These constants are tied to the shape of the graph used (changing them changes
-    # the geometry of the first layer), so make sure you use the same constants that
-    # were used during training
-    # Number of MFCC features to use
-    N_FEATURES = 26
-    # Size of the context window used for producing timesteps in the input vector
-    N_CONTEXT = 9
 
     def __init__(self, config_file: str):
         """init
@@ -55,20 +45,14 @@ class DeepSpeechEngine(STTEngine):
         # load the 
         logger.debug('Loading model from file {}'.format(config['model']))
         model_load_start = time.time()
-        self._model = Model(config['model'], 
-            DeepSpeechEngine.N_FEATURES, 
-            DeepSpeechEngine.N_CONTEXT, 
-            config['alphabet'], 
-            DeepSpeechEngine.BEAM_WIDTH)
-        self._model.enableDecoderWithLM(
-            config['alphabet'], 
-            config['lm'], 
-            config['trie'], 
-            DeepSpeechEngine.LM_ALPHA, 
-            DeepSpeechEngine.LM_BETA)
+        self._model = Model(config['model'])
+        self._model.enableExternalScorer(config['scorer'])
         model_load_end = time.time() - model_load_start
         logger.debug('Loaded model in {:.3}s.'.format(model_load_end))
+
+        # for holding a stream
         self._streaming = False
+        self._stream_context: Stream = None
 
     def transform(self, audio: Array[np.int16], fs: int) -> str:
         """ Transform audio to text
@@ -85,7 +69,7 @@ class DeepSpeechEngine(STTEngine):
     def new_stream(self):
         """Create a new stream to which to feed audio frames continuously for inference        
         """
-        self._stream_context = self._model.setupStream()
+        self._stream_context = self._model.createStream()
         self._streaming = True
 
     def feed_stream(self, frame: Array[np.int16]):
@@ -96,8 +80,7 @@ class DeepSpeechEngine(STTEngine):
         """
         assert self._streaming
         assert frame is not None
-        self._model.feedAudioContent(
-            self._stream_context, 
+        self._stream_context.feedAudioContent(
             np.frombuffer(frame, np.int16))
 
     def end_stream(self) -> str:
@@ -107,6 +90,6 @@ class DeepSpeechEngine(STTEngine):
             the text output
         """
         if self._streaming:
-            return self._model.finishStream(self._stream_context)
-        else: 
+            return self._stream_context.finishStream()
+        else:
             return None
