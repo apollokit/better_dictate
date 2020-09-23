@@ -61,6 +61,7 @@ def inference_thread(
                 engine.feed_stream(frame)
             # end of utterance
             else:
+                audio_end = time.time()
                 if spinner: spinner.stop()
                 logger.debug("End utterence")
                 text = engine.end_stream()
@@ -68,7 +69,9 @@ def inference_thread(
                 logger.debug(f"Recognized: {text}")
                 logger.debug(f'Time taken: {stream_end - stream_start:.2f}')
                 file_output_stuff[iinf] = {
-                    "audio_inference_time": stream_end-stream_start,
+                    "audio_duration": audio_end-stream_start,
+                    "inference_time_after_audio": stream_end-audio_end,
+                    "total_time": stream_end-stream_start,
                     "inference_result": text,
                 }
                 inference_output_q.put(text)

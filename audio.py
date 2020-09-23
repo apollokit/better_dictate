@@ -56,6 +56,8 @@ def audio_thread(
     # the frames that get put on the audio_frames_q
     ring_buffer = collections.deque(maxlen=num_padding_frames)
 
+    logger.info('Waiting for control input...')
+
     # the main thread loop. Go forever.
     while True:
         # check if it's time to close shop
