@@ -18,7 +18,7 @@ import wave
 from backend.dictate_globals import events
 from backend.keyboard import keyb_listener
 from backend.webspeech import webspeech_thread
-from backend.parser import parser_thread
+from backend.parser import DictateParser
 
 form = "%(asctime)s %(levelname)-8s %(name)-15s %(message)s"
 logging.basicConfig(format=form,
@@ -55,6 +55,8 @@ def go(
 
     keyb_listener.start()
 
+    parser = DictateParser()
+
     # note that shutdown event can be invoked from keyboard.py
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = []
@@ -63,7 +65,7 @@ def go(
             raw_stt_output_q,
             events))
         futures.append(executor.submit(
-            parser_thread,
+            parser.parser_thread,
             raw_stt_output_q,
             events))
         # if not shutdown_event.is_set():

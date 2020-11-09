@@ -48,7 +48,7 @@ class KeyboardManager():
             self.hotkey_primed = False
             self.quit_counter = 0
 
-        print(str(key))
+        # print(str(key))
         # print(f"\'{HOTKEY_LETTER}\'")
         # print(str(key) == f"\'{HOTKEY_LETTER}\'")
 
