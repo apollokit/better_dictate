@@ -58,11 +58,6 @@ def go(
     # note that shutdown event can be invoked from keyboard.py
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = []
-        # futures.append(executor.submit(
-        #     audio_thread, 
-        #     keyboard_audio_event, 
-        #     audio_frames_q,
-        #     shutdown_event))
         futures.append(executor.submit(
             webspeech_thread, 
             raw_stt_output_q,
@@ -74,17 +69,6 @@ def go(
         # if not shutdown_event.is_set():
         for future in as_completed(futures):
             logger.debug(f"Thread exit: {repr(future.exception())}")
-
-
-    # # Save the recorded data as a WAV file
-    # wf = wave.open(/home/kit/Desktop/projects/better_dictate/audio/2830-3980-0043.wav, 'wb')
-    # wf.setnchannels(channels)
-    # wf.setsampwidth(p.get_sample_size(sample_format))
-    # wf.setframerate(fs)
-    # wf.writeframes(b''.join(frames))
-    # wf.close()
-
-    # print(f'File written: {filename}')
 
 if __name__ == '__main__':
     cli()

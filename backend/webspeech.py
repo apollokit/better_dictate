@@ -72,14 +72,11 @@ def webspeech_thread(
                 if shutdown_event.is_set():
                     logger.info("saw shutdown") 
                     shutdown = True
-                    # event_loop.stop()
-                    # event_loop.call_soon_threadsafe(event_loop.stop) 
                     stop_realtime_server()
 
-    start_server = websockets.serve(webspeech_transact, "127.0.0.1", 5678)
+    # Code to set up and tear down the server
 
-    # asyncio.get_event_loop().run_until_complete(start_server)
-    # asyncio.get_event_loop().run_forever()
+    start_server = websockets.serve(webspeech_transact, "127.0.0.1", 5678)
 
     # The method of stopping the server below is from https://www.programcreek.com/python/?code=aaugustin%2Fdjango-userlog%2Fdjango-userlog-master%2Fuserlog%2Ftests.py
     stop_server = asyncio.Future(loop=event_loop)
@@ -92,6 +89,3 @@ def webspeech_thread(
     event_loop.run_until_complete(realtime_server.wait_closed())
 
     event_loop.close() 
-
-# webspeech_thread = threading.Thread(target=webspeech_thread, args=())
-# websocket_thread.start()
