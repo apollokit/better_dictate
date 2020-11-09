@@ -2,7 +2,8 @@ import asyncio
 import json
 import logging
 import threading
-from queue import Queue, Empty
+from typing import Dict
+from queue import Queue
 import websockets
 
 logger = logging.getLogger(__name__)
@@ -10,7 +11,7 @@ logger.setLevel(logging.DEBUG)
 
 def webspeech_thread(
         raw_stt_output_q: Queue,
-        shutdown_event: threading.Event):
+        events: Dict[str, threading.Event]):
     """ Thread for running webspeech server and communicating with that
     server
     
@@ -22,13 +23,15 @@ def webspeech_thread(
     Args:
         raw_stt_output_q: contains output string text from the webspeech
             speech to text engine.
-        shutdown_event: event used to signal shutdown for the thread
+        events: dictionary of events for coordination between threads
     """
     event_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(event_loop)
 
     # whether or not webspeech is active in browser
     active = False
+    shutdown_event = events['shutdown']
+    sleep_event = events['sleep']
 
     async def webspeech_transact(websocket, path):
         # need this because of closure rules. See Fluent Python book, pg 201
@@ -53,6 +56,10 @@ def webspeech_thread(
                 # If we received stt content from web speech
                 # Example: {'cmd': 'phrase', 'results': [{'final': True, 'transcript': ' what day', 'confidence': 0.9060565829277039}]}
                 elif msg['cmd'] == "phrase":
+                    # If we're asleep, don't do anything for now
+                    if sleep_event.is_set():
+                        continue
+
                     results = msg['results']
                     # not sure what it means if there is more than one result, so
                     # be defensive here
@@ -60,7 +67,7 @@ def webspeech_thread(
                     # For now, only use output that's final, not in mid
                     # transcription
                     if is_final:
-                        logger.info("saw: {}".format(msg))
+                        # logger.info("saw: {}".format(msg))
                         assert len(results) == 1
                         text = results[0]['transcript']
                         conf = results[0]['confidence']

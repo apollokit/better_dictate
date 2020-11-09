@@ -15,8 +15,8 @@ from pynput import keyboard
 import wave
 
 # from audio import audio_thread, read_audio_from_file
-from backend.dictate_globals import shutdown_event
-from backend.keyboard import keyboard_audio_event, keyb_listener
+from backend.dictate_globals import events
+from backend.keyboard import keyb_listener
 from backend.webspeech import webspeech_thread
 from backend.parser import parser_thread
 
@@ -61,11 +61,11 @@ def go(
         futures.append(executor.submit(
             webspeech_thread, 
             raw_stt_output_q,
-            shutdown_event))
+            events))
         futures.append(executor.submit(
             parser_thread,
             raw_stt_output_q,
-            shutdown_event))
+            events))
         # if not shutdown_event.is_set():
         for future in as_completed(futures):
             logger.debug(f"Thread exit: {repr(future.exception())}")

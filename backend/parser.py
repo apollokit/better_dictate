@@ -4,32 +4,35 @@
 import logging
 import threading
 from queue import Queue, Empty
+from typing import Dict
 
 from pynput.keyboard import Controller
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 def parser_thread(
         inference_output_q: Queue,
-        shutdown_event: threading.Event):
+        events: Dict[str, threading.Event]):
     """ Execution thread for parsing and acting output from inference
     
     Args:
         inference_output_q: contains output string text from the text to speech
             engine.
-        shutdown_event: event used to signal shutdown across threads
+        events: dictionary of events for coordination between threads
     """
 
     # the main thread loop. Go forever.
     keyboard_ctlr = Controller()
-    logger.info(f"Parser ready")
+    shutdown_event = events['shutdown']
+    logger.info("Parser ready")
     while True:
         try:
             the_text: str = inference_output_q.get(
                 block=True, timeout=0.1)
             
-            logger.debug(f"Got text from queue: {the_text}")
+            logger.debug(f"Got text from queue: '{the_text}'")
             
             # the_text = the_text.lower()
             # the_text = the_text.replace(' coma',',')

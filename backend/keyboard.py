@@ -7,69 +7,79 @@ import threading
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
 
-from backend.dictate_globals import shutdown_event
+from backend.dictate_globals import events
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-# event that signals start/stop from the keyboard
-keyboard_audio_event = threading.Event()
-
-HOTKEY_MOD = 'alt'
-HOTKEY_LET = 'z'
+HOTKEY_MOD = 'ctrl'
+HOTKEY_LETTER = 'Key.esc'
 
 keyboard_ctrlr = Controller()
 
-# counts up till quit/shutdown condition is met
-quit_counter = 0
 QUIT_COUNT = 3 
 
-# true once the modifier gets pressed
-hotkey_primed = False
 
-def on_press(key: keyboard.KeyCode):
-    # print('Key {} pressed.'.format(key))
-    pass
+sleep_event = events['sleep']
 
-def on_release(
-    key: keyboard.KeyCode):
-    """ Takes action upon key release.
-    
-    Args:
-        key: the key that was released
-    
-    Returns:
-        Usually nothing, but False when the thread should be shut down
-    """
-    global quit_counter
-    global hotkey_primed
+class KeyboardManager():
+    # counts up till quit/shutdown condition is met
+    quit_counter = 0
+    # true once the modifier gets pressed
+    hotkey_primed = False
 
-    # note the escaped quotes. We're checking if the string 
-    # is "'<letter>'"
-    if hotkey_primed and str(key) == f"\'{HOTKEY_LET}\'":
-        hotkey_primed = False
-        logger.debug(f'Saw hotkey')
-        if not keyboard_audio_event.is_set():
-            logger.debug('setting keyboard_audio_event')
-            keyboard_audio_event.set()
+
+    def on_press(self, key: keyboard.KeyCode):
+        # print('Key {} pressed.'.format(key))
+        pass
+
+    def on_release(self,
+        key: keyboard.KeyCode):
+        """ Takes action upon key release.
+        
+        Args:
+            key: the key that was released
+        
+        Returns:
+            Usually nothing, but False when the thread should be shut down
+        """
+
+        def clear_state():
+            self.hotkey_primed = False
+            self.quit_counter = 0
+
+        print(str(key))
+        # print(f"\'{HOTKEY_LETTER}\'")
+        # print(str(key) == f"\'{HOTKEY_LETTER}\'")
+
+        ## sleep/wake (right Control then Escape)
+        if self.hotkey_primed and str(key) == f"{HOTKEY_LETTER}":
+            logger.debug('Saw sleep/wake hotkey')
+            if not sleep_event.is_set():
+                logger.debug('going to sleep...')
+                sleep_event.set()
+            else:
+                logger.debug('waking up...')
+                sleep_event.clear()
+            clear_state()
+        ## Look for right alt key to be pressed
+        # when pressing modifier + HOTKEY_LETTER, for some reason there's an on_release
+        # for the modifier before the HOTKEY_LETTER. So just prime it here
+        elif HOTKEY_MOD == 'ctrl' and str(key) == 'Key.ctrl_r':
+            self.hotkey_primed = True
+        ## shut down - Escape three times in a row
+        elif str(key) == 'Key.esc':
+            self.quit_counter += 1
+            if self.quit_counter >= QUIT_COUNT:
+                logger.debug('Exiting keyboard thread...')
+                events['shutdown'].set()
+                return False
         else:
-            logger.debug('releasing keyboard_audio_event')
-            keyboard_audio_event.clear()
-    # when pressing modifier + HOTKEY_LET, for some reason there's an on_release
-    # for the modifier before the HOTKEY_LET. So just prime it here
-    elif HOTKEY_MOD == 'alt' and str(key) == 'Key.alt_r':
-        hotkey_primed = True
-    elif str(key) == 'Key.esc':
-        quit_counter += 1
-        if quit_counter >= QUIT_COUNT:
-            logger.debug('Exiting keyboard thread...')
-            keyboard_audio_event.clear()
-            shutdown_event.set()
-            return False
-    else:
-        hotkey_primed = False
+            clear_state()
+
+kb_mngr = KeyboardManager()
 
 keyb_listener = keyboard.Listener(
-    on_press=on_press,
-    on_release=on_release)
+    on_press=kb_mngr.on_press,
+    on_release=kb_mngr.on_release)
 
