@@ -19,7 +19,6 @@ def run_websocket_server():
             # await asyncio.sleep(random.random() * 3)
 
             msg = json.loads(await websocket.recv())
-            print(msg)
             
             if active:
                 print(f"saw: {msg}")
