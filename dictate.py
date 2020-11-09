@@ -16,10 +16,10 @@ import wave
 
 from audio import audio_thread, read_audio_from_file
 from dictate_globals import shutdown_event
-from inference import inference_thread
-from keyboard import keyboard_audio_event, keyb_listener
-from parser import parser_thread
-from stt import DeepSpeechEngine
+from backend.inference import inference_thread
+from backend.keyboard import keyboard_audio_event, keyb_listener
+from backend.parser import parser_thread
+from backend.stt import DeepSpeechEngine
 
 form = "%(asctime)s %(levelname)-8s %(name)-15s %(message)s"
 logging.basicConfig(format=form,
