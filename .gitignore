@@ -1,5 +1,5 @@
 # Project specifics
-better_dictate.sublime-workspace.sublime-*
+better-dictate.sublime-*
 deepspeech-0.5.1-models
 deepspeech-0.8.2-models
 inference_output*
@@ -90,7 +90,6 @@ celerybeat-schedule
 # Environments
 .env
 .venv
-env/
 venv/
 ENV/
 env.bak/
