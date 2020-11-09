@@ -31,14 +31,14 @@ def parser_thread(
             
             logger.debug(f"Got text from queue: {the_text}")
             
-            the_text = the_text.lower()
-            the_text = the_text.replace(' coma',',')
-            the_text = the_text.replace('coma',',')
-            the_text = the_text.replace(' comma',',')
-            the_text = the_text.replace('comma',',')
-            the_text = the_text.replace(' period','.')
-            the_text = the_text.replace('period','.')
-            the_text = the_text.capitalize()
+            # the_text = the_text.lower()
+            # the_text = the_text.replace(' coma',',')
+            # the_text = the_text.replace('coma',',')
+            # the_text = the_text.replace(' comma',',')
+            # the_text = the_text.replace('comma',',')
+            # the_text = the_text.replace(' period','.')
+            # the_text = the_text.replace('period','.')
+            # the_text = the_text.capitalize()
 
             keyboard_ctlr.type(the_text)
             

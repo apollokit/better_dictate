@@ -14,12 +14,11 @@ from nptyping import Array
 from pynput import keyboard
 import wave
 
-from audio import audio_thread, read_audio_from_file
-from dictate_globals import shutdown_event
-from backend.inference import inference_thread
+# from audio import audio_thread, read_audio_from_file
+from backend.dictate_globals import shutdown_event
 from backend.keyboard import keyboard_audio_event, keyb_listener
+from backend.webspeech import webspeech_thread
 from backend.parser import parser_thread
-from backend.stt import DeepSpeechEngine
 
 form = "%(asctime)s %(levelname)-8s %(name)-15s %(message)s"
 logging.basicConfig(format=form,
@@ -46,46 +45,31 @@ def go(
     ):
     logging.info('Starting up')
 
-    # if we're just doing speech to text on an input audio file
-    if audio_file is not None:
-        engine = DeepSpeechEngine('config_deepspeech.yaml')
-        audio, audio_length = read_audio_from_file(audio_file)
-        # assume 16 kHz
-        sample_rate = 16000
-
-        start = time.time()
-        text = engine.transform(audio, sample_rate)
-        print(text)
-        end = time.time()
-        print(f"Took {end - start:.2f}s for stt on {audio_length:.2f}s input")
-        return
-
     # interactive stuff
 
     # data structures for inter-thread communication
     # queue for captured audio frames
     audio_frames_q = queue.Queue()
-    # inference (text) outputs
-    inference_output_q = queue.Queue()
+    # speech to (raw) text output
+    raw_stt_output_q = queue.Queue()
 
     keyb_listener.start()
 
+    # note that shutdown event can be invoked from keyboard.py
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = []
+        # futures.append(executor.submit(
+        #     audio_thread, 
+        #     keyboard_audio_event, 
+        #     audio_frames_q,
+        #     shutdown_event))
         futures.append(executor.submit(
-            audio_thread, 
-            keyboard_audio_event, 
-            audio_frames_q,
+            webspeech_thread, 
+            raw_stt_output_q,
             shutdown_event))
         futures.append(executor.submit(
-            inference_thread, 
-            audio_frames_q,
-            inference_output_q,
-            shutdown_event,
-            inference_output_file))
-        futures.append(executor.submit(
             parser_thread,
-            inference_output_q,
+            raw_stt_output_q,
             shutdown_event))
         # if not shutdown_event.is_set():
         for future in as_completed(futures):
