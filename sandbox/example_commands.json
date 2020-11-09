@@ -1,0 +1,19 @@
+[
+    { "name": ["delete"],
+      "command": "delete",
+      "has_dictated_args": true
+    },
+    { "name": ["dash"],
+      "command": "keystroke",
+      "args": "-"
+    },
+    { "name": ["double dash"],
+      "command": "chain",
+      "args": {
+        "commands": [
+          ["dash"],
+          ["dash"],
+        ]
+      }
+    },
+]
