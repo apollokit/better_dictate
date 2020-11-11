@@ -20,6 +20,9 @@ from backend.keyboard import keyb_listener
 from backend.webspeech import webspeech_thread
 from backend.parser import DictateParser
 
+WEBSPEECH_HOST='localhost'
+WEBSPEECH_PORT=5678
+
 form = "%(asctime)s %(levelname)-8s %(name)-15s %(message)s"
 logging.basicConfig(format=form,
                     datefmt="%H:%M:%S")
@@ -63,7 +66,9 @@ def go(
         futures.append(executor.submit(
             webspeech_thread, 
             raw_stt_output_q,
-            events))
+            events,
+            WEBSPEECH_HOST,
+            WEBSPEECH_PORT))
         futures.append(executor.submit(
             parser.parser_thread,
             raw_stt_output_q,

@@ -11,7 +11,10 @@ logger.setLevel(logging.DEBUG)
 
 def webspeech_thread(
         raw_stt_output_q: Queue,
-        events: Dict[str, threading.Event]):
+        events: Dict[str, threading.Event],
+        host: str = 'localhost',
+        port: int = 5678
+        ):
     """ Thread for running webspeech server and communicating with that
     server
     
@@ -83,7 +86,7 @@ def webspeech_thread(
 
     # Code to set up and tear down the server
 
-    start_server = websockets.serve(webspeech_transact, "127.0.0.1", 5678)
+    start_server = websockets.serve(webspeech_transact, host, port)
 
     # The method of stopping the server below is from https://www.programcreek.com/python/?code=aaugustin%2Fdjango-userlog%2Fdjango-userlog-master%2Fuserlog%2Ftests.py
     stop_server = asyncio.Future(loop=event_loop)
