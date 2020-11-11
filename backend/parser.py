@@ -55,17 +55,27 @@ class DictateParser:
                 last_char = the_text[-1:]
                 logger.debug(f"Step 1: '{the_text}'")
                 
-                # Handle capitalization
-                if self.saw_end_of_sentence or saw_user_action:
+                ## Handle capitalization
+
+                # Capitalize, if it begins with "capital/capitol"
+                if the_text[:7] in ['capital', 'capitol']:
+                    the_text = the_text[7:]
+                    the_text = the_text.strip()
                     the_text = the_text.capitalize()
                 logger.debug(f"Step 2: '{the_text}'")
+
+                # Only do this automatic capitalization if we saw the end of a 
+                # sentence
+                if self.saw_end_of_sentence:
+                    the_text = the_text.capitalize()
+                logger.debug(f"Step 3: '{the_text}'")
 
                 # There should be a leading space if:
                 # - There was no user action such that we're "typing in a new place", 
                 # - The text is more than one character long.
                 if not saw_user_action and len(the_text) > 1:
                     the_text = " " + the_text
-                logger.debug(f"Step 3: '{the_text}'")
+                logger.debug(f"Step 4: '{the_text}'")
                 
                 # check if currently the end of sentence
                 if last_char in END_OF_SENTENCE_CHARS:
@@ -74,11 +84,11 @@ class DictateParser:
                     self.saw_end_of_sentence = False
                 #     # add a space to continue the sentence
                 #     the_text += " "
-                logger.debug(f"Step 4: '{the_text}'")
+                logger.debug(f"Step 5: '{the_text}'")
 
                 # replace lower case i's with capital I
                 the_text = the_text.replace(" i ", " I ")
-                logger.debug(f"Step 5: '{the_text}'")
+                logger.debug(f"Step 6: '{the_text}'")
 
                 logger.debug(f"Typing: '{the_text}'")
                 keyboard_ctlr.type(the_text)
