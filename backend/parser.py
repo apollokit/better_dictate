@@ -49,35 +49,50 @@ class DictateParser:
                     self.saw_end_of_sentence = False
 
                 logger.debug(f"Got: '{the_text}'")
+                logger.debug(f"Saw mouse_clicked_event: {mouse_clicked_event.is_set()}")
+                logger.debug(f"Saw key_pressed_event: {key_pressed_event.is_set()}")
                 
                 the_text = the_text.lower()
                 the_text = the_text.strip()
                 last_char = the_text[-1:]
                 logger.debug(f"Step 1: '{the_text}'")
                 
+                ## Handle spaces 1
+
+                # explicitly mark that we need to add a space, if "space bar" 
+                # precedes everything else
+                explicit_space_add = False
+                if the_text[:10] in ['space bar ']:
+                    the_text = the_text[10:]
+                    explicit_space_add = True
+                if the_text[:9] in ['spacebar ']:
+                    the_text = the_text[9:]
+                    explicit_space_add = True
+                logger.debug(f"Step 2: '{the_text}'")
+
                 ## Handle capitalization
 
                 # Capitalize, if it begins with "capital/capitol"
-                if the_text[:7] in ['capital', 'capitol']:
-                    the_text = the_text[7:]
-                    the_text = the_text.strip()
+                if the_text[:8] in ['capital ', 'capitol ']:
+                    the_text = the_text[8:]
                     the_text = the_text.capitalize()
-                logger.debug(f"Step 2: '{the_text}'")
+                logger.debug(f"Step 3: '{the_text}'")
 
                 # Only do this automatic capitalization if we saw the end of a 
                 # sentence
                 if self.saw_end_of_sentence:
                     the_text = the_text.capitalize()
-                logger.debug(f"Step 3: '{the_text}'")
+                logger.debug(f"Step 4: '{the_text}'")
 
-                ## Handle spaces
+                ## Handle spaces 2
 
                 # There should be a leading space if:
                 # - There was no user action such that we're "typing in a new place", 
                 # - The text is more than one character long.
-                if not saw_user_action and len(the_text) > 1:
+                # - There's an explicit space add
+                if (not saw_user_action and len(the_text) > 1) or explicit_space_add:
                     the_text = " " + the_text
-                logger.debug(f"Step 4: '{the_text}'")
+                logger.debug(f"Step 5: '{the_text}'")
                 
                 # check if currently the end of sentence
                 if last_char in END_OF_SENTENCE_CHARS:
@@ -86,7 +101,7 @@ class DictateParser:
                     self.saw_end_of_sentence = False
                 #     # add a space to continue the sentence
                 #     the_text += " "
-                logger.debug(f"Step 5: '{the_text}'")
+                logger.debug(f"Step 6: '{the_text}'")
 
                 # replace specific patterns
                 the_text = the_text.replace(" i ", " I ")
@@ -97,7 +112,7 @@ class DictateParser:
                 the_text = the_text.replace("back slider", '`')
                 # # replace "space" with " "
                 # the_text = the_text.replace(" space ", ' ')
-                logger.debug(f"Step 6: '{the_text}'")
+                logger.debug(f"Step 7: '{the_text}'")
 
                 logger.debug(f"Typing: '{the_text}'")
                 keyboard_ctlr.type(the_text)

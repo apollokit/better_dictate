@@ -34,9 +34,11 @@ class KeyboardManager():
 
 
     def on_press(self, key: keyboard.KeyCode):
-        if str(key) in keys_for_parser:
-            # print("setting key_pressed_parser_event")
-            key_pressed_parser_event.set()
+        # if str(key) in keys_for_parser:
+        #     # print("setting key_pressed_parser_event")
+        #     key_pressed_parser_event.set()
+
+        key_pressed_parser_event.set()
 
     def on_release(self,
         key: keyboard.KeyCode):
