@@ -70,6 +70,8 @@ class DictateParser:
                     the_text = the_text.capitalize()
                 logger.debug(f"Step 3: '{the_text}'")
 
+                ## Handle spaces
+
                 # There should be a leading space if:
                 # - There was no user action such that we're "typing in a new place", 
                 # - The text is more than one character long.
@@ -86,8 +88,15 @@ class DictateParser:
                 #     the_text += " "
                 logger.debug(f"Step 5: '{the_text}'")
 
-                # replace lower case i's with capital I
+                # replace specific patterns
                 the_text = the_text.replace(" i ", " I ")
+                the_text = the_text.replace("i've", "I've")
+                the_text = the_text.replace("quote", '"')
+                # for backticks
+                the_text = the_text.replace("backslider", '`')
+                the_text = the_text.replace("back slider", '`')
+                # # replace "space" with " "
+                # the_text = the_text.replace(" space ", ' ')
                 logger.debug(f"Step 6: '{the_text}'")
 
                 logger.debug(f"Typing: '{the_text}'")
