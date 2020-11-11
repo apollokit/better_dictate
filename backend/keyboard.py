@@ -1,4 +1,4 @@
-""" Thread and utilities for audio input.
+""" Functionality for dealing with keyboard interactions 
 """
 
 import logging
@@ -19,8 +19,12 @@ keyboard_ctrlr = Controller()
 
 QUIT_COUNT = 3 
 
+# These are all the keys that should *NOT* signal key_pressed_parser_event
+# keys_for_parser_disclude = ['Key.right', 'Key.esc']
+keys_for_parser = ['Key.enter', 'Key.esc', 'Key.up', 'Key.down', 'Key.tab']
 
 sleep_event = events['sleep']
+key_pressed_parser_event = events['key_pressed_parser']
 
 class KeyboardManager():
     # counts up till quit/shutdown condition is met
@@ -30,8 +34,9 @@ class KeyboardManager():
 
 
     def on_press(self, key: keyboard.KeyCode):
-        # print('Key {} pressed.'.format(key))
-        pass
+        if str(key) in keys_for_parser:
+            # print("setting key_pressed_parser_event")
+            key_pressed_parser_event.set()
 
     def on_release(self,
         key: keyboard.KeyCode):

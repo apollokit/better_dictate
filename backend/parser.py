@@ -11,6 +11,8 @@ from pynput.keyboard import Controller
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+END_OF_SENTENCE_CHARS = ['?','.','!']
+
 class DictateParser:
     saw_end_of_sentence = False
 
@@ -27,33 +29,65 @@ class DictateParser:
 
         # the main thread loop. Go forever.
         keyboard_ctlr = Controller()
+        
+        # events
         shutdown_event = events['shutdown']
+        key_pressed_event = events['key_pressed_parser']
+        mouse_clicked_event = events['mouse_clicked_parser']
+
         logger.info("Parser ready")
         while True:
             try:
+                # get raw text from the queue
                 the_text: str = raw_stt_output_q.get(
                     block=True, timeout=0.1)
                 
-                logger.debug(f"Got text from queue: '{the_text}'")
+                # check if there was a user action since last time 
+                saw_user_action = mouse_clicked_event.is_set() or \
+                    key_pressed_event.is_set()
+                if saw_user_action:
+                    self.saw_end_of_sentence = False
+
+                logger.debug(f"Got: '{the_text}'")
                 
                 the_text = the_text.lower()
                 the_text = the_text.strip()
-                print(the_text)
                 last_char = the_text[-1:]
-                #  if was end of sentence last time, format it
-                if self.saw_end_of_sentence:
+                logger.debug(f"Step 1: '{the_text}'")
+                
+                # Handle capitalization
+                if self.saw_end_of_sentence or saw_user_action:
                     the_text = the_text.capitalize()
+                logger.debug(f"Step 2: '{the_text}'")
+
+                # There should be a leading space if:
+                # - There was no user action such that we're "typing in a new place", 
+                # - The text is more than one character long.
+                if not saw_user_action and len(the_text) > 1:
                     the_text = " " + the_text
+                logger.debug(f"Step 3: '{the_text}'")
+                
                 # check if currently the end of sentence
-                if last_char in ['?','.','!']:
+                if last_char in END_OF_SENTENCE_CHARS:
                     self.saw_end_of_sentence = True
                 else:
                     self.saw_end_of_sentence = False
-                    # add a space to continue the sentence
-                    the_text += " "
+                #     # add a space to continue the sentence
+                #     the_text += " "
+                logger.debug(f"Step 4: '{the_text}'")
+
+                # replace lower case i's with capital I
+                the_text = the_text.replace(" i ", " I ")
+                logger.debug(f"Step 5: '{the_text}'")
 
                 logger.debug(f"Typing: '{the_text}'")
                 keyboard_ctlr.type(the_text)
+
+                ## clear user action state
+                # note we need to do this after typing out anything with the 
+                # keyboard controller!
+                mouse_clicked_event.clear()
+                key_pressed_event.clear()
                 
             # queue was empty up to timeout
             except Empty:

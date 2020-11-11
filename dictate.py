@@ -2,21 +2,15 @@
 """
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from functools import partial
 import logging
-import time
-import threading
 import queue
 
 import click 
-import numpy as np
-from nptyping import Array
-from pynput import keyboard
-import wave
 
 # from audio import audio_thread, read_audio_from_file
 from backend.dictate_globals import events
 from backend.keyboard import keyb_listener
+from backend.mouse import mouse_listener
 from backend.webspeech import webspeech_thread
 from backend.parser import DictateParser
 
@@ -51,12 +45,12 @@ def go(
     # interactive stuff
 
     # data structures for inter-thread communication
-    # queue for captured audio frames
-    audio_frames_q = queue.Queue()
     # speech to (raw) text output
     raw_stt_output_q = queue.Queue()
 
+    # start the keyboard and mouse listeners
     keyb_listener.start()
+    mouse_listener.start()
 
     parser = DictateParser()
 
