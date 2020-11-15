@@ -1,21 +1,21 @@
 [
-    { "name": ["delete"],
+    { "name": "delete",
       "command": "delete",
       "has_dictated_args": true
     },
-    { "name": ["dash"],
+    { "name": "dash",
       "command": "keystroke",
       "kwargs": {
         "keys": ["-"]
       }
     },
-    { "name": ["double dash"],
+    { "name": "double dash",
       "command": "command_chain",
       "kwargs": {
         "commands": [
           "dash",
-          "dash",
+          "dash"
         ]
       }
-    },
+    }
 ]
