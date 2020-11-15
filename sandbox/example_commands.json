@@ -5,14 +5,16 @@
     },
     { "name": ["dash"],
       "command": "keystroke",
-      "args": "-"
+      "kwargs": {
+        "keys": ["-"]
+      }
     },
     { "name": ["double dash"],
-      "command": "chain",
-      "args": {
+      "command": "command_chain",
+      "kwargs": {
         "commands": [
-          ["dash"],
-          ["dash"],
+          "dash",
+          "dash",
         ]
       }
     },
