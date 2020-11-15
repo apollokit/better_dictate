@@ -1,5 +1,4 @@
 """The main flask app."""
-import boto3
 import flask
 from flask import (
     Flask, redirect, render_template)
