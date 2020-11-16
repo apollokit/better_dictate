@@ -6,6 +6,8 @@ import logging
 from os import path
 import threading
 from queue import Queue, Empty
+import sys
+import traceback
 from typing import Dict
 
 from pynput.keyboard import Controller
@@ -29,7 +31,7 @@ class DictateParser:
         ## create the command dispatcher
 
         # hard-code the commands file for now
-        commands_file = path.join(path.dirname(__file__), 'example_commands.json')
+        commands_file = path.join(path.dirname(__file__), 'commands.json')
         with open(commands_file, 'r') as f:
             commands_def = json.load(f)
         cmd_reg = CommandRegistry(commands_def)
@@ -39,10 +41,13 @@ class DictateParser:
         self.text_writer = TextWriter()
 
     def parse_and_execute(self, raw_utterance: str):
-        words = raw_utterance.split()
+        text = raw_utterance
+        text = text.lower()
+        text = text.strip()
+
+        words = text.split()
         first_word = words[0]
         
-
         # if the utterance starts with the ISLAND_COMMAND_WORD, it's an
         # "island", or stand-alone command. Dispatch that for execution
         # immediately
@@ -109,7 +114,6 @@ def parser_thread(raw_stt_output_q: Queue,
         events: dictionary of events for coordination between threads
     """
 
-    print('yo')
     # events
     shutdown_event = events['shutdown']
     key_pressed_event = events['key_pressed_parser']
@@ -134,7 +138,9 @@ def parser_thread(raw_stt_output_q: Queue,
             try:
                 parser.parse_and_execute(raw_utterance)
             except Exception as e:
-                logger.info("Parsing error: {}".format(str(e)))
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+                traceback.print_exception(exc_type, exc_value, exc_traceback)
+                # logger.info("Parsing error: {}".format(str(e)))
 
             ## clear user action state
             # note we need to do this after typing out anything with the 

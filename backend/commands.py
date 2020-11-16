@@ -58,8 +58,14 @@ class KeystrokeExec(CommandExecutor):
 
     def __init__(self):
         self.keyboard_ctlr = Controller()
+        
+        # hard-coded config parameters for now...
+        # running this on a linux box
+        self.is_linux = True
+        # using sticky keys
+        self.using_sticky_keys = True
 
-    def parse_hotkey(self, hotkey: str) -> Tuple[List[Enum], str]:
+    def parse_hotkey(self, hotkey: str) -> Tuple[List[Enum], str, bool]:
         """Parses a string specification for a hotkey into usable keys
         
         Given an input like 'ctrl-alt-a', returns a tuple of 
@@ -72,17 +78,31 @@ class KeystrokeExec(CommandExecutor):
             a tuple of:
                 - a list of modifiers Key.blah (the type of which is an Enum)
                 - the string for the "operand" key.
+                - a flag indicating if the key was a "special operand", i.e. one 
+                    of the pyinput keys we have to explicitly map. This has
+                    implications for later handling.
         """
+        # todo: lru cache parse_hotkey()? kinda innefficient to run every time...
+
         hotkey_keys = hotkey.split(self.hotkey_separator)
         # modifiers should be at the front
         modifiers = hotkey_keys[:-1]
         operand_key = hotkey_keys[-1]
+        
+        # make sure they're all unique. we could end up with tricky bugs otherwise
+        assert(len(modifiers)) == len(set(modifiers))
         modifiers_obj = [self.modifiers_map[mod] for mod in modifiers]
+
         assert operand_key not in self.modifiers_map
         # if there is a mapping in special operand keys, get it. otherwise
         # default to itself.
-        operand_key = self.special_operand_keys.get(operand_key, operand_key)
-        return modifiers_obj, operand_key
+        if operand_key in self.special_operand_keys.keys():
+            operand_key_mapped = self.special_operand_keys[operand_key]
+            was_special_operand = True
+        else:
+            operand_key_mapped = operand_key
+            was_special_operand = False
+        return modifiers_obj, operand_key_mapped, was_special_operand
 
     def execute(self, stt_args: Optional[List[str]], keys: List[str]):
         """Execute command
@@ -107,7 +127,7 @@ class KeystrokeExec(CommandExecutor):
                 time.sleep(delay_time)
                 continue
 
-            hotkey_keys = self.parse_hotkey(hotkey)
+            modifiers, operand_key, was_special_operand = self.parse_hotkey(hotkey)
 
             ## press the keys
             # see https://pynput.readthedocs.io/en/latest/keyboard.html
@@ -116,25 +136,29 @@ class KeystrokeExec(CommandExecutor):
             # keys. Sometimes the modifiers are left engaged, other times not.
             # Behaviour is weird too with multiple modifier keys.
             
-            with self.keyboard_ctlr.pressed(*hotkey_keys[0]):
-                self.keyboard_ctlr.press(hotkey_keys[1])
-                self.keyboard_ctlr.release(hotkey_keys[1])
-            
-            # if not self.using_sticky_keys:
-            # press modifiers
-            # for modifier in hotkey_keys[0]:
-            #     self.keyboard_ctlr.press(modifier)
-            #     # self.keyboard_ctlr.release(modifier)
-            # self.keyboard_ctlr.press(hotkey_keys[1])
-            # self.keyboard_ctlr.release(hotkey_keys[1])
-            # time.sleep(1)
-            # # release modifiers - need 2x to fully cycle through
-            # for modifier in hotkey_keys[0]:
-            #     # self.keyboard_ctlr.press(modifier)
-            #     # self.keyboard_ctlr.release(modifier)
-            #     # self.keyboard_ctlr.press(modifier)
-            #     self.keyboard_ctlr.release(modifier)
+            if len(modifiers) > 0:
+                last_modifier = modifiers[-1]
+            with self.keyboard_ctlr.pressed(*modifiers):
+                self.keyboard_ctlr.press(operand_key)
+                self.keyboard_ctlr.release(operand_key)
 
+            if self.is_linux and self.using_sticky_keys:
+                ## Special handling for sticky keys...
+                # if using sticky keys, pyinput explicits strange behavior from the
+                # Xorg system...when using modifiers with non-special keys (like 
+                # 'a', '6', or '~' whereas special would include Key.tab and Key.space)
+                # not all of the modifiers will be cleared upon keypress of the 
+                # operand_key. for whatever reason, the last modifier in the modifiers 
+                # list won't be cleared.  we do that explicitly here.
+                if len(modifiers) > 0 and not was_special_operand:
+                    # we start out in sticky "single press" mode...cycle to 
+                    # sticky latched
+                    self.keyboard_ctlr.press(last_modifier)
+                    self.keyboard_ctlr.release(last_modifier)
+                    # now cycle to "unstuck"
+                    self.keyboard_ctlr.press(last_modifier)
+                    self.keyboard_ctlr.release(last_modifier)
+            
 class ChainCommandExec(CommandExecutor):
     def __init__(self):
         pass

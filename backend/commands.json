@@ -23,6 +23,12 @@
         "keys": [" ","shift+a","p","p","l","e"]
       }
     },
+    { "name": "tabitha",
+      "command": "keystroke",
+      "kwargs": {
+        "keys": ["super+tab"]
+      }
+    },
     { "name": "double dash",
       "command": "command_chain",
       "kwargs": {
@@ -33,3 +39,4 @@
       }
     }
 ]
+
