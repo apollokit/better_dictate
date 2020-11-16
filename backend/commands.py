@@ -108,14 +108,14 @@ class KeystrokeExec(CommandExecutor):
                 self.keyboard_ctlr.press(hotkey_keys[1])
                 self.keyboard_ctlr.release(hotkey_keys[1])
 
-class ChainCommandExec(CommandExecutor):
-    def __init__(self):
-        pass
+# class ChainCommandExec(CommandExecutor):
+#     def __init__(self):
+#         pass
 
-    def execute(self, commands: List[str]):
-        for command in commands:
-            pass
-            # execute command
+#     def execute(self, commands: List[str]):
+#         for command in commands:
+#             pass
+#             # execute command
 
 
 
@@ -266,7 +266,7 @@ class CommandDispatcher:
             cmd_def_kwargs = self.cmd_reg.get_command_def_kwargs(cmd_name)
             executor.execute(stt_args=cmd_args, **cmd_def_kwargs)
 
-    def parse(self, command_text: str) -> Tuple[str, int, List[str]]:
+    def parse(self, command_text: str) -> Tuple[str, int, List[str]]: #pylint: disable=too-many-branches
         """Parse a command text
         
         Rurns a raw command string into arguments for actual execution
@@ -371,8 +371,8 @@ if __name__ == "__main__":
 
     import json
     with open('example_commands.json', 'r') as f:
-        commands_def = json.load(f)
-    cmd_reg = CommandRegistry(commands_def)
+        commands_def_in = json.load(f)
+    cmd_reg = CommandRegistry(commands_def_in)
 
     cmd_exec = CommandDispatcher(cmd_reg)
     # import ipdb
