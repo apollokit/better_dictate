@@ -1,13 +1,21 @@
 [
     { "name": "delete",
       "command": "delete",
-      "has_dictated_args": true
+      "has_dictated_args": true,
+      "kwargs": {}
     },
     { "name": "dash",
       "command": "keystroke",
       "kwargs": {
         "keys": ["-"]
       }
+    },
+    { "name": "dog",
+      "command": "keystroke",
+      "kwargs": {
+        "keys": ["super+tab", "delay 0.25",  "a","b","c"]
+      },
+      "comment": "delay is necessary because otherwise the super plus tab is not registered before the a and b"
     },
     { "name": "double dash",
       "command": "command_chain",
