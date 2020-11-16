@@ -18,6 +18,7 @@ HOTKEY_LETTER = 'Key.esc'
 keyboard_ctrlr = Controller()
 
 QUIT_COUNT = 5
+SLEEP_COUNT = 3
 
 # These are all the keys that should *NOT* signal key_pressed_parser_event
 # keys_for_parser_disclude = ['Key.right', 'Key.esc']
@@ -29,6 +30,8 @@ key_pressed_parser_event = events['key_pressed_parser']
 class KeyboardManager():
     # counts up till quit/shutdown condition is met
     quit_counter = 0
+    # counts up till sleep condition is met
+    sleep_counter = 0
     # true once the modifier gets pressed
     hotkey_primed = False
 
@@ -54,6 +57,7 @@ class KeyboardManager():
         def clear_state():
             self.hotkey_primed = False
             self.quit_counter = 0
+            self.sleep_counter = 0
 
         # print(str(key))
         # print(f"\'{HOTKEY_LETTER}\'")
@@ -61,14 +65,7 @@ class KeyboardManager():
 
         ## sleep/wake (right Control then Escape)
         if self.hotkey_primed and str(key) == f"{HOTKEY_LETTER}":
-            logger.debug('Saw sleep/wake hotkey')
-            if not sleep_event.is_set():
-                logger.debug('going to sleep...')
-                sleep_event.set()
-            else:
-                logger.debug('waking up...')
-                sleep_event.clear()
-            clear_state()
+            pass
         ## Look for right alt key to be pressed
         # when pressing modifier + HOTKEY_LETTER, for some reason there's an on_release
         # for the modifier before the HOTKEY_LETTER. So just prime it here
@@ -76,11 +73,22 @@ class KeyboardManager():
             self.hotkey_primed = True
         ## shut down - Escape three times in a row
         elif str(key) == 'Key.esc':
-            self.quit_counter += 1
-            if self.quit_counter >= QUIT_COUNT:
-                logger.debug('Exiting keyboard thread...')
-                events['shutdown'].set()
-                return False
+            self.sleep_counter += 1
+            if self.sleep_counter >= SLEEP_COUNT:
+                logger.debug('Saw sleep/wake hotkey')
+                if not sleep_event.is_set():
+                    logger.debug('going to sleep...')
+                    sleep_event.set()
+                else:
+                    logger.debug('waking up...')
+                    sleep_event.clear()
+                clear_state()
+            # ignore quit stuff for now
+            # self.quit_counter += 1
+            # if self.quit_counter >= QUIT_COUNT:
+            #     logger.debug('Exiting keyboard thread...')
+            #     events['shutdown'].set()
+            #     return False
         else:
             clear_state()
 
