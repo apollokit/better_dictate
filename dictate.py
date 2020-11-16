@@ -12,7 +12,7 @@ from backend.dictate_globals import events
 from backend.keyboard import keyb_listener
 from backend.mouse import mouse_listener
 from backend.webspeech import webspeech_thread
-from backend.parser import DictateParser
+from backend.parser import parser_thread
 
 WEBSPEECH_HOST='localhost'
 WEBSPEECH_PORT=5678
@@ -52,8 +52,6 @@ def go(
     keyb_listener.start()
     mouse_listener.start()
 
-    parser = DictateParser()
-
     # note that shutdown event can be invoked from keyboard.py
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = []
@@ -64,7 +62,7 @@ def go(
             WEBSPEECH_HOST,
             WEBSPEECH_PORT))
         futures.append(executor.submit(
-            parser.parser_thread,
+            parser_thread,
             raw_stt_output_q,
             events))
         # if not shutdown_event.is_set():

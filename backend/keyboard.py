@@ -17,7 +17,7 @@ HOTKEY_LETTER = 'Key.esc'
 
 keyboard_ctrlr = Controller()
 
-QUIT_COUNT = 3 
+QUIT_COUNT = 5
 
 # These are all the keys that should *NOT* signal key_pressed_parser_event
 # keys_for_parser_disclude = ['Key.right', 'Key.esc']

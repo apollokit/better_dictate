@@ -10,12 +10,18 @@
         "keys": ["-"]
       }
     },
-    { "name": "dog",
+    { "name": "test 1",
       "command": "keystroke",
       "kwargs": {
         "keys": ["super+tab", "delay 0.25",  "a","b","c"]
       },
       "comment": "delay is necessary because otherwise the super plus tab is not registered before the a and b"
+    },
+    { "name": "test",
+      "command": "keystroke",
+      "kwargs": {
+        "keys": [" ","shift+a","p","p","l","e"]
+      }
     },
     { "name": "double dash",
       "command": "command_chain",

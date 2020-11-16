@@ -1,11 +1,14 @@
 # pylint: disable=arguments-differ
 
 from enum import Enum
+import logging
 import time
 from typing import List, Dict, Any, Tuple, Optional
 
 from pynput.keyboard import Controller, Key
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class CommandExecutor:
     """Executes a command
@@ -93,6 +96,8 @@ class KeystrokeExec(CommandExecutor):
                 one regular key plus 0 or more modifiers. 
                 Example: ['ctrl-c','alt-v']
         """
+        logger.debug("KeystrokeExec: typing keys: '{}'".format(keys))
+
         # there should be no speech to text arguments for keystroke command
         assert stt_args is None
         for hotkey in keys:
@@ -103,19 +108,41 @@ class KeystrokeExec(CommandExecutor):
                 continue
 
             hotkey_keys = self.parse_hotkey(hotkey)
+
+            ## press the keys
             # see https://pynput.readthedocs.io/en/latest/keyboard.html
+            # WARNING! does not work with sticky keys!
+            # unfortunately I couldn't get this to work consistently with sticky
+            # keys. Sometimes the modifiers are left engaged, other times not.
+            # Behaviour is weird too with multiple modifier keys.
+            
             with self.keyboard_ctlr.pressed(*hotkey_keys[0]):
                 self.keyboard_ctlr.press(hotkey_keys[1])
                 self.keyboard_ctlr.release(hotkey_keys[1])
+            
+            # if not self.using_sticky_keys:
+            # press modifiers
+            # for modifier in hotkey_keys[0]:
+            #     self.keyboard_ctlr.press(modifier)
+            #     # self.keyboard_ctlr.release(modifier)
+            # self.keyboard_ctlr.press(hotkey_keys[1])
+            # self.keyboard_ctlr.release(hotkey_keys[1])
+            # time.sleep(1)
+            # # release modifiers - need 2x to fully cycle through
+            # for modifier in hotkey_keys[0]:
+            #     # self.keyboard_ctlr.press(modifier)
+            #     # self.keyboard_ctlr.release(modifier)
+            #     # self.keyboard_ctlr.press(modifier)
+            #     self.keyboard_ctlr.release(modifier)
 
-# class ChainCommandExec(CommandExecutor):
-#     def __init__(self):
-#         pass
+class ChainCommandExec(CommandExecutor):
+    def __init__(self):
+        pass
 
-#     def execute(self, commands: List[str]):
-#         for command in commands:
-#             pass
-#             # execute command
+    def execute(self, commands: List[str]):
+        for command in commands:
+            pass
+            # execute command
 
 
 
@@ -257,6 +284,8 @@ class CommandDispatcher:
                 speech-to-text engine
         """
         
+        logger.debug("Raw command: '{}'".format(command_text))
+
         cmd_name, cmd_mult, cmd_args = self.parse(command_text)
         
         executor = self.cmd_reg.get_command_executor(cmd_name)
@@ -265,6 +294,31 @@ class CommandDispatcher:
         for icmd in range(cmd_mult):
             cmd_def_kwargs = self.cmd_reg.get_command_def_kwargs(cmd_name)
             executor.execute(stt_args=cmd_args, **cmd_def_kwargs)
+
+    def convert_multiplier(self, token: str) -> Optional[int]:
+        """Convert a command multiplier token into the actual number
+                
+        Args:
+            token: the token from the raw command
+        
+        Returns:
+            the converted multiplier, or None if it couldn't be converted
+        """
+
+        # hard-coded conversions from tokens to numbers. Accounts for edge
+        # cases we've seen
+        fixed_conversions = {
+            'to': 2
+        }
+
+        # first see if it's an integer
+        try:
+            cmd_multiplier = int(token)
+        # if we don't find a number here, then see if it's in the fixed
+        # conversions dictionary
+        except ValueError:
+            cmd_multiplier = fixed_conversions.get(token, None)
+        return cmd_multiplier
 
     def parse(self, command_text: str) -> Tuple[str, int, List[str]]: #pylint: disable=too-many-branches
         """Parse a command text
@@ -293,22 +347,24 @@ class CommandDispatcher:
             # parse the actual number
             if state == 'command_multiplier_0':
                 # if we find an integer, that's the command multiplier
-                try:
-                    cmd_multiplier = int(token)
+                cmd_multiplier = self.convert_multiplier(token)
+                if cmd_multiplier is not None:
                     state = 'command_multiplier_1'
                 # if we don't find a number here, then it's implicit 1. Proceed
                 # to command name
-                except ValueError:
+                else:
                     cmd_multiplier = 1
+                    # go back a token because we're actually at the command name now
+                    itoken -= 1
                     state = 'command_name_0'
             elif state == 'command_multiplier_1':
                 # if there is a multiplier post fix token, we don't need to
                 # do anything
                 if token in self.multiplier_postfixes:
                     pass
-                # the multiplier postfix is optional. in that case, we're at the
-                # start of the command name.
+                # the multiplier postfix is optional.
                 else:
+                    # go back a token because we're actually at the command name now
                     itoken -= 1
                 state = 'command_name_0'
             # first word in the command name
@@ -327,9 +383,10 @@ class CommandDispatcher:
                 if token in self.cmd_reg.cmd_name_words(1):
                     cmd_name_list.append(token)
                     state = 'command_name_2'
-                # if there is no second word, we're in the command args
+                # if there is no second word, we're in the command args now
                 else:
                     state = 'args'
+                    # go back a token because we're actually at the args
                     itoken -= 1
             # third word in the command name (optional)
             elif state == 'command_name_1':
@@ -340,6 +397,7 @@ class CommandDispatcher:
                 # if there is no third word, we're in the command args
                 else:
                     state = 'args'
+                    # go back a token because we're actually at the args now
                     itoken -= 1
             # args. there can be an arbitrary number
             elif state == 'args':
@@ -379,47 +437,3 @@ if __name__ == "__main__":
     # ipdb.set_trace()
     # cmd_exec.dispatch('12 times dash')
     cmd_exec.dispatch('3 dog')
-
-
-
-# from python_utils.file_utils import unjson_thing
-
-# raw = 'yo how are you doing <escape> 3 tabitha, left click'
-
-# island_commands = ['delete']
-
-# def parse_utterance(utterance: str):
-#     words = raw.split()
-#     first_word = words[0]
-#     if first_word in island_commands:
-#         execute_command(words)
-#     # not an island, there's mixed stt and (potentially) commands
-#     else:
-#         commands_words = []
-#         command_words = []
-#         # words to print as literals ("speech to [final output] text" words)
-#         stt_words_to_print = []
-#         in_command = False
-#         # did we see ESCAPE_WORD on the last iteration?
-#         last_iter_was_escape = False
-#         for word in words:
-#             # we are either building up stt words or command words
-#             if word != ESCAPE_WORD:
-#                 if in_command:
-#                     command_words.append(word)
-#                 else:
-#                     stt_words_to_print.append(word)
-#             else:
-#                 # end of command, need to execute it
-#                 if in_command:
-#                     execute_command(command_words)
-#                 # we're starting a command, so need to print out the stt words
-#                 else:
-#                     print_to_output(stt_words_to_print)
-#                     stt_words_to_print = []
-#                 in_command = not in_command
-
-#             # reset this state
-#             if last_iter_was_escape:
-#                 last_iter_was_escape = False
-
