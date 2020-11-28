@@ -7,7 +7,7 @@ import threading
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
 
-from backend.manager import events
+from backend.manager import events, app_mngr
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -24,7 +24,6 @@ SLEEP_COUNT = 3
 # keys_for_parser_disclude = ['Key.right', 'Key.esc']
 keys_for_parser = ['Key.enter', 'Key.esc', 'Key.up', 'Key.down', 'Key.tab']
 
-sleep_event = events['sleep']
 key_pressed_parser_event = events['key_pressed_parser']
 
 class KeyboardManager():
@@ -75,13 +74,8 @@ class KeyboardManager():
         elif str(key) == 'Key.esc':
             self.sleep_counter += 1
             if self.sleep_counter >= SLEEP_COUNT:
-                logger.debug('Saw sleep/wake hotkey')
-                if not sleep_event.is_set():
-                    logger.debug('going to sleep...')
-                    sleep_event.set()
-                else:
-                    logger.debug('waking up...')
-                    sleep_event.clear()
+                logger.debug('Saw sleep/wake hotkey')                    
+                app_mngr.toggle_sleep()
                 clear_state()
             # ignore quit stuff for now
             # self.quit_counter += 1

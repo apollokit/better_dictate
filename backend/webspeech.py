@@ -6,6 +6,8 @@ from typing import Dict
 from queue import Queue
 import websockets
 
+from backend.manager import app_mngr
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -34,7 +36,6 @@ def webspeech_thread(
     # whether or not webspeech is active in browser
     active = False
     shutdown_event = events['shutdown']
-    sleep_event = events['sleep']
 
     async def webspeech_transact(websocket, path):
         # need this because of closure rules. See Fluent Python book, pg 201
@@ -60,7 +61,7 @@ def webspeech_thread(
                 # Example: {'cmd': 'phrase', 'results': [{'final': True, 'transcript': ' what day', 'confidence': 0.9060565829277039}]}
                 elif msg['cmd'] == "phrase":
                     # If we're asleep, don't do anything for now
-                    if sleep_event.is_set():
+                    if app_mngr.sleeping:
                         continue
 
                     results = msg['results']
