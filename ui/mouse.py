@@ -5,7 +5,7 @@ lifted from: https://pynput.readthedocs.io/en/latest/mouse.html#
 
 from pynput import mouse
 
-from backend.dictate_globals import events
+from backend.manager import events
 
 mouse_moved_event = events['mouse_moved_parser']
 mouse_clicked_event = events['mouse_clicked_parser']

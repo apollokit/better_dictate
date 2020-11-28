@@ -7,7 +7,7 @@ import threading
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
 
-from backend.dictate_globals import events
+from backend.manager import events
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

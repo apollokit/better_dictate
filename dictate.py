@@ -8,7 +8,7 @@ import queue
 import click 
 
 # from audio import audio_thread, read_audio_from_file
-from backend.dictate_globals import events
+from backend.manager import events
 from ui.keyboard import keyb_listener
 from ui.mouse import mouse_listener
 from backend.webspeech import webspeech_thread
