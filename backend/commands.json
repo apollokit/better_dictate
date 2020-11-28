@@ -29,6 +29,12 @@
         "keys": ["super+tab"]
       }
     },
+    { "name": "pasta",
+      "command": "keystroke",
+      "kwargs": {
+        "keys": [" ", "ctrl+v"]
+      }
+    },
     { "name": "double dash",
       "command": "command_chain",
       "kwargs": {
