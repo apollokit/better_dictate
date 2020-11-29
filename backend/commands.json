@@ -38,10 +38,22 @@
     { "name": "blue",
       "command": "keystroke",
       "kwargs": {
+        "keys": ["shift+left"]
+      }
+    },
+    { "name": "blue word",
+      "command": "keystroke",
+      "kwargs": {
         "keys": ["ctrl+shift+left"]
       }
     },
-    { "name": "regular",
+    { "name": "green",
+      "command": "keystroke",
+      "kwargs": {
+        "keys": ["shift+right"]
+      }
+    },
+    { "name": "green word",
       "command": "keystroke",
       "kwargs": {
         "keys": ["ctrl+shift+right"]

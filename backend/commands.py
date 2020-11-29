@@ -354,7 +354,11 @@ class CommandDispatcher:
         # hard-coded conversions from tokens to numbers. Accounts for edge
         # cases we've seen
         fixed_conversions = {
-            'to': 2
+            'to': 2,
+            'two': 2,
+            'three': 3,
+            'for': 4,
+            'three': 3
         }
 
         # first see if it's an integer
