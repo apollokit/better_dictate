@@ -74,6 +74,7 @@ def webspeech_thread(
                         assert len(results) == 1
                         text = results[0]['transcript']
                         conf = results[0]['confidence']
+                        logger.info("Adding to output queue: %s", text)
                         raw_stt_output_q.put(text)
 
             # upon timeout of websocket.recv(), we can do any required houskeeping

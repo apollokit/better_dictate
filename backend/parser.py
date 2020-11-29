@@ -24,6 +24,9 @@ class DictateParser:
     ESCAPE_WORD = 'dog'
     ISLAND_COMMAND_WORD = 'do'
 
+    # hard-code the commands file for now
+    commands_file = path.join(path.dirname(__file__), 'commands.json')
+
     def __init__(self):
         
         # true if there was a user action since the last raw_utterance
@@ -31,17 +34,37 @@ class DictateParser:
 
         ## create the command dispatcher
 
-        # hard-code the commands file for now
-        commands_file = path.join(path.dirname(__file__), 'commands.json')
-        with open(commands_file, 'r') as f:
+        with open(self.commands_file, 'r') as f:
             commands_def = json.load(f)
-        cmd_reg = CommandRegistry(commands_def)
-        self.cmd_exec = CommandDispatcher(cmd_reg)
+        self.cmd_reg = CommandRegistry(commands_def)
+        self.cmd_exec = CommandDispatcher(self.cmd_reg)
+        # lock to prevent updating the command registry in the middle of parsing
+        self._cmd_reg_lock = threading.Lock()
 
         ## create the text writer
         self.text_writer = TextWriter()
 
+
+    def reload_commands(self):
+        """Reload/update the commands in the command registry
+        """
+        logger.info('Loading commands from file: %s', self.commands_file)
+        try:
+            with open(self.commands_file, 'r') as f:
+                commands_def = json.load(f)
+            self._cmd_reg_lock.acquire()
+            self.cmd_reg.update_commands(commands_def)
+        except json.decoder.JSONDecodeError:
+            logger.error('Error loading %s', self.commands_file)
+        finally:
+            self._cmd_reg_lock.release()
+
     def parse_and_execute(self, raw_utterance: str):
+        """Parse and take action upon the raw text output from an utterance
+        
+        Args:
+            raw_utterance: the text directly out of the speech-to-text engine
+        """
         text = raw_utterance
         text = text.lower()
         text = text.strip()
@@ -49,61 +72,67 @@ class DictateParser:
         words = text.split()
         first_word = words[0]
         
-        # if the utterance starts with the ISLAND_COMMAND_WORD, it's an
-        # "island", or stand-alone command. Dispatch that for execution
-        # immediately
-        if first_word == self.ISLAND_COMMAND_WORD:
-            logger.info("DictateParser: island command")
-            self.cmd_exec.dispatch(' '.join(words[1:]))
+        self._cmd_reg_lock.acquire()
 
-        # not an island, there's mixed stt and (potentially) commands
-        else:
-            idispatch = 0
-            command_words = []
-            # text that we'll format and print out as straight speech to text
-            raw_text_words = []
-            in_command = False
-            # did we see ESCAPE_WORD on the last iteration?
-            # last_iter_was_escape = False
-            for word in words:
-                # we are either building up raw text or command words
-                if word != self.ESCAPE_WORD:
-                    if in_command:
-                        command_words.append(word)
-                    else:
-                        raw_text_words.append(word)
-                else:
-                    # end of command, need to execute it
-                    if in_command:
-                        logger.info("DictateParser: dispatch command ({})".format(idispatch))
-                        self.cmd_exec.dispatch(' '.join(command_words))
-                        command_words = []
-                        idispatch += 1
-                    # we're starting a command, so need to print out the raw text
-                    else:
-                        logger.info("DictateParser: dispatch text ({})".format(idispatch))
-                        self.text_writer.dispatch(' '.join(raw_text_words), self.saw_user_action)
-                        raw_text_words = []
-                        idispatch += 1
-                    in_command = not in_command
+        try:
+            # if the utterance starts with the ISLAND_COMMAND_WORD, it's an
+            # "island", or stand-alone command. Dispatch that for execution
+            # immediately
+            if first_word == self.ISLAND_COMMAND_WORD:
+                logger.info("DictateParser: island command")
+                self.cmd_exec.dispatch(' '.join(words[1:]))
 
-            # handle the end
-            if in_command:
-                logger.info("DictateParser: dispatch command ({})".format(idispatch))
-                self.cmd_exec.dispatch(' '.join(command_words))
+            # not an island, there's mixed stt and (potentially) commands
             else:
-                logger.info("DictateParser: dispatch text ({})".format(idispatch))
-                self.text_writer.dispatch(' '.join(raw_text_words), self.saw_user_action)
+                idispatch = 0
+                command_words = []
+                # text that we'll format and print out as straight speech to text
+                raw_text_words = []
+                in_command = False
+                # did we see ESCAPE_WORD on the last iteration?
+                # last_iter_was_escape = False
+                for word in words:
+                    # we are either building up raw text or command words
+                    if word != self.ESCAPE_WORD:
+                        if in_command:
+                            command_words.append(word)
+                        else:
+                            raw_text_words.append(word)
+                    else:
+                        # end of command, need to execute it
+                        if in_command:
+                            logger.info("DictateParser: dispatch command ({})".format(idispatch))
+                            self.cmd_exec.dispatch(' '.join(command_words))
+                            command_words = []
+                            idispatch += 1
+                        # we're starting a command, so need to print out the raw text
+                        else:
+                            logger.info("DictateParser: dispatch text ({})".format(idispatch))
+                            self.text_writer.dispatch(' '.join(raw_text_words), self.saw_user_action)
+                            raw_text_words = []
+                            idispatch += 1
+                        in_command = not in_command
+
+                # handle the end
+                if in_command:
+                    logger.info("DictateParser: dispatch command ({})".format(idispatch))
+                    self.cmd_exec.dispatch(' '.join(command_words))
+                else:
+                    logger.info("DictateParser: dispatch text ({})".format(idispatch))
+                    self.text_writer.dispatch(' '.join(raw_text_words), self.saw_user_action)
 
 
-                # reset this state
-                # if last_iter_was_escape:
-                #     last_iter_was_escape = False
+                    # reset this state
+                    # if last_iter_was_escape:
+                    #     last_iter_was_escape = False
 
+        # No except here, so any exceptions pass up the stack 
 
+        finally:
+            self._cmd_reg_lock.release()
         
 
-parser = DictateParser()
+parser_inst = DictateParser()
 
 def parser_thread(raw_stt_output_q: Queue,
         events: Dict[str, threading.Event]):
@@ -132,15 +161,16 @@ def parser_thread(raw_stt_output_q: Queue,
             logger.debug("Saw key_pressed_event: {}".format(key_pressed_event.is_set()))
             
             # check if there was a user action since last time 
-            parser.saw_user_action = mouse_clicked_event.is_set() or \
+            parser_inst.saw_user_action = mouse_clicked_event.is_set() or \
                 key_pressed_event.is_set()
             
             try:
-                parser.parse_and_execute(raw_utterance)
+                parser_inst.parse_and_execute(raw_utterance)
             except Exception as e:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 traceback.print_exception(exc_type, exc_value, exc_traceback)
                 # logger.info("Parsing error: {}".format(str(e)))
+            
 
             ## clear user action state
             # note we need to do this after typing out anything with the 
@@ -161,7 +191,7 @@ if __name__ == "__main__":
     logging.basicConfig(format=form,
                         datefmt="%H:%M:%S")
 
-    parser.saw_user_action = False
+    parser_inst.saw_user_action = False
     raw_utterance = "hey there i've got dog test"
     time.sleep(2)
-    parser.parse_and_execute(raw_utterance)
+    parser_inst.parse_and_execute(raw_utterance)

@@ -35,6 +35,18 @@
         "keys": [" ", "ctrl+v"]
       }
     },
+    { "name": "blue",
+      "command": "keystroke",
+      "kwargs": {
+        "keys": ["ctrl+shift+left"]
+      }
+    },
+    { "name": "regular",
+      "command": "keystroke",
+      "kwargs": {
+        "keys": ["ctrl+shift+right"]
+      }
+    },
     { "name": "double dash",
       "command": "command_chain",
       "kwargs": {

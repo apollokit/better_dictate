@@ -53,7 +53,11 @@ class KeystrokeExec(CommandExecutor):
         'shift': Key.shift,
     }
     special_operand_keys = {
-        'tab': Key.tab
+        'tab': Key.tab,
+        'left': Key.left,
+        'up': Key.up,
+        'right': Key.right,
+        'down': Key.down
     }
 
     def __init__(self):
@@ -198,17 +202,35 @@ class CommandRegistry:
         # example: 'dash' -> {"keys": ["-"]}
         self._reg_cmd_def_kwargs: Dict[str, CommandDefinitionKwargs] = {}
 
-        for command_def in commands_def:
-            self._reg_exec[command_def['name']] = \
-                self.command_types[command_def['command']]
-            self._reg_cmd_def_kwargs[command_def['name']] = \
-                command_def['kwargs']
-
         self._cmd_names = None
         # internal caches of the first words of a command name, second words etc
         self._first_words = None
         self._second_words = None
         self._third_words = None
+
+        self.update_commands(commands_def)
+
+    def update_commands(self, commands_def: List[CommandDefinition]):
+        """Update the commands in the internal registry
+        
+        Args:
+            commands_def: the commands definition, loaded from file or elsewhere
+        """
+        # clear all these first
+        self._reg_exec = {}
+        self._reg_cmd_def_kwargs = {}
+        self._cmd_names = None
+        self._first_words = None
+        self._second_words = None
+        self._third_words = None
+
+        for icommand, command_def in enumerate(commands_def):
+            logger.debug('(%d) Loading command: %s', icommand, command_def['name'])
+            self._reg_exec[command_def['name']] = \
+                self.command_types[command_def['command']]
+            self._reg_cmd_def_kwargs[command_def['name']] = \
+                command_def['kwargs']
+
         self._set_cmd_name_words()
 
     @property
