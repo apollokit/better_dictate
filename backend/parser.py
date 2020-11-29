@@ -13,6 +13,7 @@ from typing import Dict
 from pynput.keyboard import Controller
 
 from backend.commands import CommandDispatcher, CommandRegistry
+from backend.manager import app_mngr
 from backend.text import TextWriter
 
 logger = logging.getLogger(__name__)
@@ -115,7 +116,6 @@ def parser_thread(raw_stt_output_q: Queue,
     """
 
     # events
-    shutdown_event = events['shutdown']
     key_pressed_event = events['key_pressed_parser']
     mouse_clicked_event = events['mouse_clicked_parser']
 
@@ -151,7 +151,7 @@ def parser_thread(raw_stt_output_q: Queue,
         # queue was empty up to timeout
         except Empty:
             # check if it's time to close shop
-            if shutdown_event.is_set(): 
+            if app_mngr.quitting: 
                 break
             
 if __name__ == "__main__":

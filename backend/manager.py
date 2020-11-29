@@ -7,9 +7,6 @@ logger.setLevel(logging.DEBUG)
 
 # dictionary of events for coordination between threads
 events: Dict[str, threading.Event] = {
-    # event used to signal shutdown across threads
-    # once set, this should NEVER BE CLEARED!
-    'shutdown': threading.Event(),
     # mouse moved, for signaling parser thread 
     'mouse_moved_parser': threading.Event(),
     # mouse clicked, for signaling parser thread 
@@ -31,6 +28,9 @@ class AppManager:
         # indicates sleep mode - when asleep, no speech should be acted on
         self._sleeping = False
         self._sleep_lock = threading.Lock()
+        # indicates that the app is quitting
+        self._quit = False
+        self._quit_lock = threading.Lock()
 
     def toggle_sleep(self):
         """Toggle sleep state
@@ -55,6 +55,26 @@ class AppManager:
         asleep = self._sleeping
         self._sleep_lock.release()
         return asleep
+
+    def signal_quit(self):
+        """Signal app to quit
+        """
+        self._quit_lock.acquire()
+        self._quit = True
+        logger.debug('quitting...')
+        self._quit_lock.release()
+
+    @property
+    def quitting(self) -> bool:
+        """Get quit state
+        
+        Returns:
+            quit state, True if quitting
+        """
+        self._quit_lock.acquire()
+        quit = self._quit
+        self._quit_lock.release()
+        return quit
 
 
 # the global app manager instance

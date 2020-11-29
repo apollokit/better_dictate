@@ -52,7 +52,7 @@ def go(
     keyb_listener.start()
     mouse_listener.start()
 
-    # note that shutdown event can be invoked from keyboard.py
+    # note that shutdown/quit event can be invoked from app_indicator.py
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = []
         futures.append(executor.submit(
@@ -65,7 +65,6 @@ def go(
             parser_thread,
             raw_stt_output_q,
             events))
-        # if not shutdown_event.is_set():
         for future in as_completed(futures):
             logger.debug(f"Thread exit: {repr(future.exception())}")
 

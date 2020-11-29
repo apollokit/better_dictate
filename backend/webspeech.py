@@ -35,7 +35,6 @@ def webspeech_thread(
 
     # whether or not webspeech is active in browser
     active = False
-    shutdown_event = events['shutdown']
 
     async def webspeech_transact(websocket, path):
         # need this because of closure rules. See Fluent Python book, pg 201
@@ -80,7 +79,7 @@ def webspeech_thread(
             # upon timeout of websocket.recv(), we can do any required houskeeping
             except asyncio.TimeoutError:
                 # shutdown if we received the signal
-                if shutdown_event.is_set():
+                if app_mngr.quitting:
                     logger.info("saw shutdown") 
                     shutdown = True
                     stop_realtime_server()

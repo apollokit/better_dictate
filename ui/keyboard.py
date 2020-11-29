@@ -27,8 +27,6 @@ keys_for_parser = ['Key.enter', 'Key.esc', 'Key.up', 'Key.down', 'Key.tab']
 key_pressed_parser_event = events['key_pressed_parser']
 
 class KeyboardManager():
-    # counts up till quit/shutdown condition is met
-    quit_counter = 0
     # counts up till sleep condition is met
     sleep_counter = 0
     # true once the modifier gets pressed
@@ -70,19 +68,12 @@ class KeyboardManager():
         # for the modifier before the HOTKEY_LETTER. So just prime it here
         elif HOTKEY_MOD == 'ctrl' and str(key) == 'Key.ctrl_r':
             self.hotkey_primed = True
-        ## shut down - Escape three times in a row
         elif str(key) == 'Key.esc':
             self.sleep_counter += 1
             if self.sleep_counter >= SLEEP_COUNT:
                 logger.debug('Saw sleep/wake hotkey')                    
                 app_mngr.toggle_sleep()
                 clear_state()
-            # ignore quit stuff for now
-            # self.quit_counter += 1
-            # if self.quit_counter >= QUIT_COUNT:
-            #     logger.debug('Exiting keyboard thread...')
-            #     events['shutdown'].set()
-            #     return False
         else:
             clear_state()
 
