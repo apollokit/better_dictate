@@ -5,8 +5,8 @@ if [ -e "$virtualenv_dir" ]; then
 	echo "$virtualenv_dir already exists. We'll just update requirements."
 else
 	virtualenv -p python3.8  $virtualenv_dir
-	./setup.sh
 fi
 
 source source_virtualenv
+./install_packages.sh
 pip install -r requirements.txt

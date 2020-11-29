@@ -8,6 +8,7 @@ import queue
 import click 
 
 # from audio import audio_thread, read_audio_from_file
+from ui.app_indicator import app_indicator_thread, gtk_main_thread
 from backend.manager import events
 from ui.keyboard import keyb_listener
 from ui.mouse import mouse_listener
@@ -49,11 +50,12 @@ def go(
     raw_stt_output_q = queue.Queue()
 
     # start the keyboard and mouse listeners
+    # note these are also threads
     keyb_listener.start()
     mouse_listener.start()
 
     # note that shutdown/quit event can be invoked from app_indicator.py
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    with ThreadPoolExecutor(max_workers=4) as executor:
         futures = []
         futures.append(executor.submit(
             webspeech_thread, 
@@ -65,6 +67,10 @@ def go(
             parser_thread,
             raw_stt_output_q,
             events))
+        futures.append(executor.submit(
+            app_indicator_thread))
+        futures.append(executor.submit(
+            gtk_main_thread))
         for future in as_completed(futures):
             logger.debug(f"Thread exit: {repr(future.exception())}")
 
