@@ -57,7 +57,8 @@ class KeystrokeExec(CommandExecutor):
         'left': Key.left,
         'up': Key.up,
         'right': Key.right,
-        'down': Key.down
+        'down': Key.down,
+        'enter': Key.enter
     }
 
     def __init__(self):

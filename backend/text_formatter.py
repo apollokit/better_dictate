@@ -127,8 +127,9 @@ class PlainTextFormatter(TextFormatter):
         self.saw_user_action = False
 
         # want padding around ()
-        self._remove_space_before_open_paren = False
-        self._remove_space_after_close_paren = False
+        # actually, just set these to true for now
+        self._remove_space_before_open_paren = True
+        self._remove_space_after_close_paren = True
 
     def format(self, raw: str) -> str:
         the_text = self._pre_format(raw)

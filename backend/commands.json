@@ -71,6 +71,12 @@
         "keys": ["left"]
       }
     },
+    { "name": "enter",
+      "command": "keystroke",
+      "kwargs": {
+        "keys": ["enter"]
+      }
+    },
     { "name": "double dash",
       "command": "command_chain",
       "kwargs": {

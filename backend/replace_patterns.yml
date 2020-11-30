@@ -1,5 +1,6 @@
 " i ": " I "
 "i've": "I've"
+"quotes": "\""
 "quote": "\""
 # for backticks
 "backslider": "`"
@@ -10,3 +11,10 @@
 "close sesame": ")"
 # =
 "equals sign": "="
+"equal sign": "="
+"death": "def"
+"underscore": "_"
+". pie": ".py"
+" spacebar ": " "
+"spacebar ": " "
+" spacebar": " "
