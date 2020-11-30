@@ -91,8 +91,8 @@ class TextFormatter:
                     state_s_quote_open = True
             if char == '(':
                 if self._remove_space_before_open_paren:
-                    remove_whitespace_indcs.append(ichar + 1)
-                remove_whitespace_indcs.append(ichar - 1)
+                    remove_whitespace_indcs.append(ichar - 1)
+                remove_whitespace_indcs.append(ichar + 1)
             if char == ')':
                 remove_whitespace_indcs.append(ichar - 1)
                 if self._remove_space_after_close_paren:
