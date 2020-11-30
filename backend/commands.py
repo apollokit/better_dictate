@@ -10,20 +10,31 @@ from pynput.keyboard import Controller, Key
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+# forward declare this so it can be used in
+class CommandRegistry:
+    """see implementation below"""
+    pass
+
 class CommandExecutor:
     """Executes a command
     
-    Virtual class, meant to be subclassed for specific command types    
+    Meant to be subclassed for specific command types    
     """
+    def __init__(self, cmd_reg: CommandRegistry):
+        """Init
+        
+        Args:
+            cmd_reg: command registry, for command lookup
+        """
+        self.cmd_reg = cmd_reg
 
-    def execute(self, stt_args: Optional[List[str]], **cmd_def_kwargs):
+    def execute(self, stt_args: Optional[List[str]]):
         """Execute the command, with given arguments
         
         should be overridden in subclasses
 
         Args:
             stt_args: list of string arguments received from speech to text
-            cmd_def_kwargs: other keyword arguments from the command definition
         """
         raise NotImplementedError
 
@@ -33,8 +44,13 @@ class KeystrokeExec(CommandExecutor):
     
     Command name: 'keystroke'
     cmd_def_kwargs: 
-        'keys': list of hotkeys to execute. Can also include "delay <float
-            time>" to specify insertion of a delay    
+        'keys': 
+            list of sequential keystroke hotkeys to execute, where each 
+            hotkey may be one regular key plus 0 or more modifiers.
+            
+            Can also include "delay <float time>" to specify insertion of a delay    
+
+            Example: ['ctrl-c','delay 0.25','alt-v','tab','enter']
     """
 
     # the separator used between separate keys within a hotkey, e.g. 'ctrl+a'
@@ -54,7 +70,14 @@ class KeystrokeExec(CommandExecutor):
         'enter': Key.enter
     }
 
-    def __init__(self):
+    def __init__(self, cmd_reg: CommandRegistry, keys: List[str]):
+        """Init
+                
+        Args:
+            keys: see class docs
+        """
+        super().__init__(cmd_reg)
+        self.keys = keys
         self.keyboard_ctlr = Controller()
         
         # hard-coded config parameters for now...
@@ -102,7 +125,7 @@ class KeystrokeExec(CommandExecutor):
             was_special_operand = False
         return modifiers_obj, operand_key_mapped, was_special_operand
 
-    def execute(self, stt_args: Optional[List[str]], keys: List[str]):
+    def execute(self, stt_args: Optional[List[str]]):
         """Execute command
 
         Note that when using system hotkeys like super+tab, you may need to
@@ -110,15 +133,12 @@ class KeystrokeExec(CommandExecutor):
         
         Args:
             stt_args: see superclass
-            keys: list of sequential keystroke hotkeys, where each hotkey may be
-                one regular key plus 0 or more modifiers. 
-                Example: ['ctrl-c','alt-v']
         """
-        logger.debug("KeystrokeExec: typing keys: '{}'".format(keys))
+        logger.debug("KeystrokeExec: typing keys: '{}'".format(self.keys))
 
         # there should be no speech to text arguments for keystroke command
         assert stt_args is None
-        for hotkey in keys:
+        for hotkey in self.keys:
             # deal with delay
             if hotkey.startswith('delay'):
                 delay_time = float(hotkey.split()[1])
@@ -162,41 +182,64 @@ class TypeExec(CommandExecutor):
     
     Command name: 'type'
     cmd_def_kwargs: 
-        'content': the string content to type    
+        'content': the string content to type, e.g. "I'm a string"
     """
 
-    def __init__(self):
+    def __init__(self, cmd_reg: CommandRegistry, content: List[str]):
+        """Init
+        
+        Args:
+            content: see class docs
+        """
+        super().__init__(cmd_reg)
+        self.content = content
         self.keyboard_ctlr = Controller()
         
-    def execute(self, stt_args: Optional[List[str]], content: List[str]):
+    def execute(self, stt_args: Optional[List[str]]):
         """Execute command
         
         Args:
             stt_args: see superclass
-            content: the string to type out
         """
-        logger.debug("TypeExec: typing: '{}'".format(content))
+        logger.debug("TypeExec: typing: '{}'".format(self.content))
 
         # there should be no speech to text arguments for keystroke command
         assert stt_args is None
-        self.keyboard_ctlr.type(content)
+        self.keyboard_ctlr.type(self.content)
     
-# forward declare this
-class CommandRegistry:
-    pass
+
 
 class ChainCommandExec(CommandExecutor):
-    def __init__(self, cmd_reg: CommandRegistry):
-        self.cmd_reg = cmd_reg
+    """Execute a chain command, which is multiple commands strung together
+    
+    Command name: 'chain'
+    cmd_def_kwargs: 
+        'commands': a list of command names to execute, in order
+    """
 
-    def execute(self, stt_args: Optional[List[str]], commands: List[str]):
+    def __init__(self, cmd_reg: CommandRegistry, commands: List[str]):
+        """Init
+        
+        Args:
+            commands: see class docs
+        """
+        super().__init__(cmd_reg)
+        self.commands = commands
+
+    def execute(self, stt_args: Optional[List[str]]):
+        """Execute command
+        
+        Args:
+            stt_args: see superclass
+        """
+
         # there should be no speech to text arguments for chain command
         assert stt_args is None
         
-        for cmd_name in commands:
+        for cmd_name in self.commands:
             executor = self.cmd_reg.get_command_executor(cmd_name)        
-            cmd_def_kwargs = self.cmd_reg.get_command_def_kwargs(cmd_name)
-            executor.execute(stt_args=None, **cmd_def_kwargs)
+            # cmd_def_kwargs = self.cmd_reg.get_command_def_kwargs(cmd_name)
+            executor.execute(stt_args=None)
 
 CommandDefinition = Dict[str, Any]
 CommandDefinitionKwargs = Dict[str, Any]
@@ -206,6 +249,13 @@ class CommandRegistry: # pylint: disable=function-redefined
     """Maintains a registry of all the known commands
     """
 
+    # nothing from string command type in the command definition to the class
+    command_types = {
+        'keystroke': KeystrokeExec, 
+        'chain': ChainCommandExec,
+        'type': TypeExec
+    }
+
     def __init__(self, commands_def: List[CommandDefinition]):
         """Init
         
@@ -214,21 +264,12 @@ class CommandRegistry: # pylint: disable=function-redefined
         """
 
         # the mapping
-        self.command_types = {
-            'keystroke': KeystrokeExec(), 
-            'delete': KeystrokeExec(), 
-            'command_chain': ChainCommandExec(self),
-            'type': TypeExec()
-        }
+        # dictionary mapping command name to command executor
+        # self.commands: Dict[str, CommandExecutor] = None
 
         # mapping from a command name to the executor instance for it
-        self._reg_exec: Dict[str, CommandExecutor] = {}
-        # mapping from a command name to the keyword arguments for it specified
-        # in the command definition
-        # example: 'dash' -> {"keys": ["-"]}
-        self._reg_cmd_def_kwargs: Dict[str, CommandDefinitionKwargs] = {}
+        self.commands: Dict[str, CommandExecutor] = {}
 
-        self._cmd_names = None
         # internal caches of the first words of a command name, second words etc
         self._first_words = None
         self._second_words = None
@@ -243,19 +284,16 @@ class CommandRegistry: # pylint: disable=function-redefined
             commands_def: the commands definition, loaded from file or elsewhere
         """
         # clear all these first
-        self._reg_exec = {}
-        self._reg_cmd_def_kwargs = {}
-        self._cmd_names = None
+        self.commands = {}
         self._first_words = None
         self._second_words = None
         self._third_words = None
 
         for icommand, command_def in enumerate(commands_def):
             logger.debug('(%d) Loading command: %s', icommand, command_def['name'])
-            self._reg_exec[command_def['name']] = \
-                self.command_types[command_def['command']]
-            self._reg_cmd_def_kwargs[command_def['name']] = \
-                command_def['kwargs']
+            kwargs = command_def['kwargs']
+            self.commands[command_def['name']] = \
+                self.command_types[command_def['command_type']](self, **kwargs)
 
         self._set_cmd_name_words()
 
@@ -266,9 +304,7 @@ class CommandRegistry: # pylint: disable=function-redefined
         Returns:
             the command names
         """
-        if not self._cmd_names:
-            self._cmd_names = list(self._reg_exec.keys())
-        return self._cmd_names
+        return list(self.commands.keys())
 
     def _set_cmd_name_words(self):
         """Set internal caches of command words
@@ -314,19 +350,7 @@ class CommandRegistry: # pylint: disable=function-redefined
         Returns:
             executor instance
         """
-        return self._reg_exec[cmd_name]
-    
-    def get_command_def_kwargs(self, cmd_name: str) -> CommandDefinitionKwargs:
-        """Get the keyword args from the command definition for a given command
-        
-        Args:
-            cmd_name: the name of the command
-        
-        Returns:
-            the keyword args
-        """
-        return self._reg_cmd_def_kwargs[cmd_name]
-
+        return self.commands[cmd_name]
 
 
 class CommandDispatcher:
@@ -363,9 +387,8 @@ class CommandDispatcher:
         executor = self.cmd_reg.get_command_executor(cmd_name)
         
         # execute cmd_mult times
-        for icmd in range(cmd_mult):
-            cmd_def_kwargs = self.cmd_reg.get_command_def_kwargs(cmd_name)
-            executor.execute(stt_args=cmd_args, **cmd_def_kwargs)
+        for _ in range(cmd_mult):
+            executor.execute(stt_args=cmd_args)
 
     def convert_multiplier(self, token: str) -> Optional[int]:
         """Convert a command multiplier token into the actual number
@@ -384,7 +407,6 @@ class CommandDispatcher:
             'two': 2,
             'three': 3,
             'for': 4,
-            'three': 3
         }
 
         # first see if it's an integer

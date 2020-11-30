@@ -1,90 +1,85 @@
 [
-    { "name": "delete",
-      "command": "delete",
-      "has_dictated_args": true,
-      "kwargs": {}
-    },
     { "name": "dash",
-      "command": "keystroke",
+      "command_type": "keystroke",
       "kwargs": {
         "keys": ["-"]
       }
     },
     { "name": "test 1",
-      "command": "keystroke",
+      "command_type": "keystroke",
       "kwargs": {
         "keys": ["super+tab", "delay 0.25",  "a","b","c"]
       },
       "comment": "delay is necessary because otherwise the super plus tab is not registered before the a and b"
     },
     { "name": "test",
-      "command": "keystroke",
+      "command_type": "keystroke",
       "kwargs": {
         "keys": [" ","shift+a","p","p","l","e"]
       }
     },
     { "name": "tabitha",
-      "command": "keystroke",
+      "command_type": "keystroke",
       "kwargs": {
         "keys": ["super+tab"]
       }
     },
     { "name": "pasta",
-      "command": "keystroke",
+      "command_type": "keystroke",
       "kwargs": {
         "keys": [" ", "ctrl+v"]
       }
     },
     { "name": "blue",
-      "command": "keystroke",
+      "command_type": "keystroke",
       "kwargs": {
         "keys": ["shift+left"]
       }
     },
     { "name": "blue word",
-      "command": "keystroke",
+      "command_type": "keystroke",
       "kwargs": {
         "keys": ["ctrl+shift+left"]
       }
     },
     { "name": "green",
-      "command": "keystroke",
+      "command_type": "keystroke",
       "kwargs": {
         "keys": ["shift+right"]
       }
     },
     { "name": "green word",
-      "command": "keystroke",
+      "command_type": "keystroke",
       "kwargs": {
         "keys": ["ctrl+shift+right"]
       }
     },
     { "name": "right",
-      "command": "keystroke",
+      "command_type": "keystroke",
       "kwargs": {
         "keys": ["right"]
       }
     },
     { "name": "left",
-      "command": "keystroke",
+      "command_type": "keystroke",
       "kwargs": {
         "keys": ["left"]
       }
     },
     { "name": "enter",
-      "command": "keystroke",
+      "command_type": "keystroke",
       "kwargs": {
         "keys": ["enter"]
       }
     },
     { "name": "_get status",
-      "command": "type",
+      "command_type": "type",
       "kwargs": {
         "content": "git status"
       }
     },
     { "name": "get status",
-      "command": "command_chain",
+      "command_type": "chain",
       "kwargs": {
         "commands": [
           "_get status",
