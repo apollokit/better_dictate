@@ -24,7 +24,8 @@ class TextWriter:
         # start in plain text mode
         self.mode = 'plaintext'
 
-    def dispatch(self, raw: str, saw_user_action: bool):
+    def dispatch(self, raw: str, saw_user_action: bool, 
+            force_capitalize: bool):
         """write some text out
         
         Args:
@@ -36,7 +37,8 @@ class TextWriter:
         logger.debug("Raw text: '%s'", raw)
        
         curr_formatter = formatters[self.mode]
-        curr_formatter.saw_user_action = saw_user_action
+        curr_formatter.next_iter_saw_user_action = saw_user_action
+        curr_formatter.next_iter_force_capitalize = force_capitalize
         formatted = curr_formatter.format(raw)
         
         logger.debug("Typing: '%s'", formatted)

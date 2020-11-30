@@ -155,9 +155,11 @@ class PlainTextFormatter(TextFormatter):
         # number words that have been written out
         self._count_words_out = 0
 
-        # should set this to true if the user took some action before the next
-        # utterance
-        self.saw_user_action = False
+        # should set this to true if the user took some action before 
+        # the next utterance
+        self.next_iter_saw_user_action = False
+        # should set this to true if want to force capitalization for next utterance
+        self.next_iter_force_capitalize = False
 
         # want padding around ()
         # actually, just set these to true for now
@@ -169,7 +171,7 @@ class PlainTextFormatter(TextFormatter):
         the_text = self._pre_format(raw)
         self._log_step(1, the_text)
 
-        if self.saw_user_action:
+        if self.next_iter_saw_user_action:
             self._saw_end_of_sentence = False
         
         last_char = the_text[-1:]
@@ -197,7 +199,7 @@ class PlainTextFormatter(TextFormatter):
 
         # Only do this automatic capitalization if we saw the end of a 
         # sentence
-        if self._saw_end_of_sentence:
+        if self._saw_end_of_sentence or self.next_iter_force_capitalize:
             the_text = the_text.capitalize()
         self._log_step(4, the_text)
 
@@ -207,7 +209,7 @@ class PlainTextFormatter(TextFormatter):
         # - There was no user action such that we're "typing in a new place", 
         # - The text is more than one character long.
         # - There's an explicit space add
-        if (not self.saw_user_action and len(the_text) > 1) or explicit_space_add:
+        if (not self.next_iter_saw_user_action and len(the_text) > 1) or explicit_space_add:
             the_text = " " + the_text
         self._log_step(5, the_text)
         

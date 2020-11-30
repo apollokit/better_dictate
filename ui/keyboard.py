@@ -7,7 +7,7 @@ import threading
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
 
-from backend.manager import events, app_mngr
+from backend.manager import events, app_mngr, event_mngr
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -31,6 +31,9 @@ class KeyboardManager():
     sleep_counter = 0
     # true once the modifier gets pressed
     hotkey_primed = False
+    # we look for the user to type '.' and then ' ' to manually trigger an end
+    # of sentence condition
+    manual_sentence_end_primed = False
 
 
     def on_press(self, key: keyboard.KeyCode):
@@ -50,32 +53,31 @@ class KeyboardManager():
         Returns:
             Usually nothing, but False when the thread should be shut down
         """
+        keystring = str(key)
+
+        # get rid of single 's when it's a letter keystroke
+        if 'Key' not in keystring:
+            keystring = keystring[1]
 
         def clear_state():
-            self.hotkey_primed = False
-            self.quit_counter = 0
             self.sleep_counter = 0
+            self.manual_sentence_end_primed = False
 
-        # print(str(key))
-        # print(f"\'{HOTKEY_LETTER}\'")
-        # print(str(key) == f"\'{HOTKEY_LETTER}\'")
-
-        ## sleep/wake (right Control then Escape)
-        if self.hotkey_primed and str(key) == f"{HOTKEY_LETTER}":
-            pass
-        ## Look for right alt key to be pressed
-        # when pressing modifier + HOTKEY_LETTER, for some reason there's an on_release
-        # for the modifier before the HOTKEY_LETTER. So just prime it here
-        elif HOTKEY_MOD == 'ctrl' and str(key) == 'Key.ctrl_r':
-            self.hotkey_primed = True
-        elif str(key) == 'Key.esc':
+        if keystring == 'Key.esc':
             self.sleep_counter += 1
             if self.sleep_counter >= SLEEP_COUNT:
                 logger.debug('Saw sleep/wake hotkey')                    
                 app_mngr.toggle_sleep()
                 clear_state()
+        elif keystring == '.':
+            self.manual_sentence_end_primed = True
+        elif keystring == 'Key.space':
+            if self.manual_sentence_end_primed:
+                event_mngr.saw_manual_sentence_end.set()
+                clear_state()
         else:
             clear_state()
+            event_mngr.saw_manual_sentence_end.clear()
 
 kb_mngr = KeyboardManager()
 

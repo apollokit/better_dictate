@@ -13,7 +13,7 @@ from typing import Dict
 from pynput.keyboard import Controller
 
 from backend.commands import CommandDispatcher, CommandRegistry
-from backend.manager import app_mngr
+from backend.manager import app_mngr, event_mngr
 from backend.text import TextWriter
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,8 @@ class DictateParser:
         
         # true if there was a user action since the last raw_utterance
         self.saw_user_action = False
+        # if we should force capitalization on next utterance
+        self.force_capitalize = False
 
         ## create the command dispatcher
 
@@ -108,7 +110,10 @@ class DictateParser:
                         # we're starting a command, so need to print out the raw text
                         else:
                             logger.info("DictateParser: dispatch text ({})".format(idispatch))
-                            self.text_writer.dispatch(' '.join(raw_text_words), self.saw_user_action)
+                            self.text_writer.dispatch(
+                                ' '.join(raw_text_words), 
+                                self.saw_user_action,
+                                self.force_capitalize)
                             raw_text_words = []
                             idispatch += 1
                         in_command = not in_command
@@ -119,7 +124,10 @@ class DictateParser:
                     self.cmd_exec.dispatch(' '.join(command_words))
                 else:
                     logger.info("DictateParser: dispatch text ({})".format(idispatch))
-                    self.text_writer.dispatch(' '.join(raw_text_words), self.saw_user_action)
+                    self.text_writer.dispatch(
+                        ' '.join(raw_text_words), 
+                        self.saw_user_action,
+                        self.force_capitalize)
 
 
                     # reset this state
@@ -159,10 +167,13 @@ def parser_thread(raw_stt_output_q: Queue,
             logger.debug("Got: '{}'".format(raw_utterance))
             logger.debug("Saw mouse_clicked_event: {}".format(mouse_clicked_event.is_set()))
             logger.debug("Saw key_pressed_event: {}".format(key_pressed_event.is_set()))
+            logger.debug("Saw manual sentence end: {}".format(event_mngr.saw_manual_sentence_end.is_set()))
             
             # check if there was a user action since last time 
             parser_inst.saw_user_action = mouse_clicked_event.is_set() or \
                 key_pressed_event.is_set()
+            # check if we should force capitalization
+            parser_inst.force_capitalize = event_mngr.saw_manual_sentence_end.is_set()
             
             try:
                 parser_inst.parse_and_execute(raw_utterance)
@@ -177,6 +188,7 @@ def parser_thread(raw_stt_output_q: Queue,
             # keyboard controller!
             mouse_clicked_event.clear()
             key_pressed_event.clear()
+            event_mngr.saw_manual_sentence_end.clear()
             
         # queue was empty up to timeout
         except Empty:

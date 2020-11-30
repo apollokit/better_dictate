@@ -76,7 +76,15 @@ class AppManager:
         self._quit_lock.release()
         return quit
 
+class EventManager:
+    """A clearinghouse for coordinating events between threads"""
+    
+    def __init__(self):
+        # indicates if we detected a manual end of sentence condition
+        self.saw_manual_sentence_end = threading.Event()
 
 # the global app manager instance
 app_mngr = AppManager()
+# the global event manager instance
+event_mngr = EventManager()
 
