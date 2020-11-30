@@ -1,6 +1,7 @@
 from os import path
-import yaml
 import logging
+
+import yaml
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -8,6 +9,10 @@ logger.setLevel(logging.DEBUG)
 END_OF_SENTENCE_CHARS = ['?','.','!']
 
 class TextFormatter:
+    """Handles correct formatting of text for output
+    """
+
+    # this is the file with hard-coded patterns of text to drop in and replace
     # hard-code the replace patterns file for now
     replace_patterns_file = path.join(path.dirname(__file__),
         'replace_patterns.yml')
@@ -21,36 +26,68 @@ class TextFormatter:
             self._fixed_replace_patterns = yaml.load(f, Loader=yaml.FullLoader)
 
     def _log_step(self, step: int, the_text: str):
+        """log a step in the formatting process to output
+        
+        Args:
+            step: which step we're at in the formatting process
+            the_text: the text to log
+        """
         logger.debug("Step %d: '%s'", step, the_text)
         # print("Step %d: '%s'", step, the_text)
     
     def format(self, raw: str) -> str:
+        """Format raw text for output
+        
+        Meant to be overridden in subclasses
+        
+        Args:
+            raw: the raw text to format
+        """
         raise NotImplementedError
     
     def _pre_format(self, the_text: str) -> str:
-        self._step = 0
+        """Do pre formatting steps before calling the main format function
         
-        the_text = the_text
+        Args:
+            the_text: the text to format
+        
+        Returns:
+            the formatted text
+        """        
         the_text = the_text.lower()
         the_text = the_text.strip()
         return the_text
     
-    def _post_format(self, the_text: str) -> str:
-        raise NotImplementedError
-
     def replace_fixed_patterns(self, the_text: str) -> str:
+        """replace fixed text patterns with desired text
+        
+        Hunts through the text for certain patterns, and replaces with desired patterns
+        
+        Args:
+            the_text: the text to format
+        
+        Returns:
+            the formatted text
+        """
         for orig, replace in self._fixed_replace_patterns.items():
             the_text = the_text.replace(orig, replace)
         return the_text
 
-    def fix_closures(self, input_text) -> str:
+    def fix_closures(self, input_text) -> str: # pylint: disable=too-many-branches
+        """Fix formatting of closures, or text surrounded by the relevant special character, e.g. `asdf`
+        
+        Args:
+            input_text: the text to format
+
+        Returns:
+            the formatted text
+        """
         output_chars = []
 
         # state machines for handling open / close state of special 
         # characters. if the state is true, that means the next one of these
         # characters is the opening of a closure . if false, the next
-        # character is an end of closure. A closure is text surrounded by the
-        # relevant special character, e.g. ` asdf `
+        # character is an end of closure.
         state_backtick_open = True
         # double quote
         state_d_quote_open = True
@@ -60,12 +97,7 @@ class TextFormatter:
 
         # array of indices of white spaces to be removed
         remove_whitespace_indcs = []
-        for ichar, char in enumerate(input_text):
-            if ichar == len(input_text) - 1:
-                next_char = None
-            else:
-                next_char = input_text[ichar + 1]
-            
+        for ichar, char in enumerate(input_text):            
             if char == '`':
                 if state_backtick_open:
                     # remove the following white space, if any
@@ -109,11 +141,12 @@ class TextFormatter:
                 output_chars.append(char)
             # all other stuff gets removed
 
-
         return ''.join(output_chars)
 
 
 class PlainTextFormatter(TextFormatter):
+    """Formatter for plaintext, long-form output
+    """
     def __init__(self):
         super().__init__()
         
@@ -132,6 +165,7 @@ class PlainTextFormatter(TextFormatter):
         self._remove_space_after_close_paren = True
 
     def format(self, raw: str) -> str:
+        """See superclass docs"""
         the_text = self._pre_format(raw)
         self._log_step(1, the_text)
 
@@ -193,9 +227,16 @@ class PlainTextFormatter(TextFormatter):
         return the_text
 
 class CodeTextFormatter(TextFormatter):
+    """Formatter for code"""
+
     def __init__(self):
+        super().__init__()
         # no padding around ()
         self._remove_space_before_open_paren = True
         self._remove_space_after_close_paren = True
 
+    def format(self, raw: str) -> str:
+        """See superclass docs"""
+        # currently unimplemented
+        pass
     
