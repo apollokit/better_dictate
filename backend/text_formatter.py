@@ -3,6 +3,8 @@ import logging
 
 import yaml
 
+from backend.manager import event_mngr
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -171,7 +173,17 @@ class PlainTextFormatter(TextFormatter):
         the_text = self._pre_format(raw)
         self._log_step(1, the_text)
 
-        if self.next_iter_saw_user_action:
+        logger.debug("Saw mouse_clicked: %s", str(event_mngr.mouse_clicked.is_set()))
+        logger.debug("Saw key_pressed: %s", str(event_mngr.key_pressed.is_set()))
+        logger.debug("Saw manual sentence end: %s", str(event_mngr.saw_manual_sentence_end.is_set()))
+        
+        # check if there was a user action since last time 
+        saw_user_action = event_mngr.mouse_clicked.is_set() or \
+            event_mngr.key_pressed.is_set()
+        # check if we should force capitalization
+        force_capitalize = event_mngr.saw_manual_sentence_end.is_set()
+
+        if saw_user_action:
             self._saw_end_of_sentence = False
         
         last_char = the_text[-1:]
@@ -199,7 +211,7 @@ class PlainTextFormatter(TextFormatter):
 
         # Only do this automatic capitalization if we saw the end of a 
         # sentence
-        if self._saw_end_of_sentence or self.next_iter_force_capitalize:
+        if self._saw_end_of_sentence or force_capitalize:
             the_text = the_text.capitalize()
         self._log_step(4, the_text)
 
@@ -209,7 +221,7 @@ class PlainTextFormatter(TextFormatter):
         # - There was no user action such that we're "typing in a new place", 
         # - The text is more than one character long.
         # - There's an explicit space add
-        if (not self.next_iter_saw_user_action and len(the_text) > 1) or explicit_space_add:
+        if (not saw_user_action and len(the_text) > 1) or explicit_space_add:
             the_text = " " + the_text
         self._log_step(5, the_text)
         

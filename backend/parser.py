@@ -28,12 +28,6 @@ class DictateParser:
     commands_file = path.join(path.dirname(__file__), 'commands.json')
 
     def __init__(self):
-        
-        # true if there was a user action since the last raw_utterance
-        self.saw_user_action = False
-        # if we should force capitalization on next utterance
-        self.force_capitalize = False
-
         ## create the command dispatcher
 
         with open(self.commands_file, 'r') as f:
@@ -110,10 +104,7 @@ class DictateParser:
                         # we're starting a command, so need to print out the raw text
                         else:
                             logger.info("DictateParser: dispatch text ({})".format(idispatch))
-                            self.text_writer.dispatch(
-                                ' '.join(raw_text_words), 
-                                self.saw_user_action,
-                                self.force_capitalize)
+                            self.text_writer.dispatch(' '.join(raw_text_words))
                             raw_text_words = []
                             idispatch += 1
                         in_command = not in_command
@@ -124,15 +115,8 @@ class DictateParser:
                     self.cmd_exec.dispatch(' '.join(command_words))
                 else:
                     logger.info("DictateParser: dispatch text ({})".format(idispatch))
-                    self.text_writer.dispatch(
-                        ' '.join(raw_text_words), 
-                        self.saw_user_action,
-                        self.force_capitalize)
+                    self.text_writer.dispatch(' '.join(raw_text_words))
 
-
-                    # reset this state
-                    # if last_iter_was_escape:
-                    #     last_iter_was_escape = False
 
         # No except here, so any exceptions pass up the stack 
 
@@ -159,15 +143,6 @@ def parser_thread(raw_stt_output_q: Queue):
                 block=True, timeout=0.1)
 
             logger.debug("Got: '{}'".format(raw_utterance))
-            logger.debug("Saw mouse_clicked_event: {}".format(event_mngr.mouse_clicked.is_set()))
-            logger.debug("Saw key_pressed_event: {}".format(event_mngr.key_pressed.is_set()))
-            logger.debug("Saw manual sentence end: {}".format(event_mngr.saw_manual_sentence_end.is_set()))
-            
-            # check if there was a user action since last time 
-            parser_inst.saw_user_action = event_mngr.mouse_clicked.is_set() or \
-                event_mngr.key_pressed.is_set()
-            # check if we should force capitalization
-            parser_inst.force_capitalize = event_mngr.saw_manual_sentence_end.is_set()
             
             try:
                 parser_inst.parse_and_execute(raw_utterance)
@@ -175,14 +150,6 @@ def parser_thread(raw_stt_output_q: Queue):
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 traceback.print_exception(exc_type, exc_value, exc_traceback)
                 # logger.info("Parsing error: {}".format(str(e)))
-            
-
-            ## clear user action state
-            # note we need to do this after typing out anything with the 
-            # keyboard controller!
-            event_mngr.mouse_clicked.clear()
-            event_mngr.key_pressed.clear()
-            event_mngr.saw_manual_sentence_end.clear()
             
         # queue was empty up to timeout
         except Empty:

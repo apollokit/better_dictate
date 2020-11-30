@@ -2,6 +2,7 @@ import logging
 
 from pynput.keyboard import Controller
 
+from backend.manager import event_mngr
 from backend.text_formatter import PlainTextFormatter, CodeTextFormatter
 
 logger = logging.getLogger(__name__)
@@ -24,22 +25,24 @@ class TextWriter:
         # start in plain text mode
         self.mode = 'plaintext'
 
-    def dispatch(self, raw: str, saw_user_action: bool, 
-            force_capitalize: bool):
+    def dispatch(self, raw: str):
         """write some text out
         
         Args:
             raw: the raw text output from the speech-to-text engine, before 
                 formatting
-            saw_user_action: flag to indicate that the user took some action 
-                before this utterance.
         """
         logger.debug("Raw text: '%s'", raw)
        
         curr_formatter = formatters[self.mode]
-        curr_formatter.next_iter_saw_user_action = saw_user_action
-        curr_formatter.next_iter_force_capitalize = force_capitalize
         formatted = curr_formatter.format(raw)
         
         logger.debug("Typing: '%s'", formatted)
         self._keyboard_ctlr.type(formatted)
+
+        ## clear user action state
+        # note we need to do this after typing out anything with the 
+        # keyboard controller!
+        event_mngr.mouse_clicked.clear()
+        event_mngr.key_pressed.clear()
+        event_mngr.saw_manual_sentence_end.clear()
