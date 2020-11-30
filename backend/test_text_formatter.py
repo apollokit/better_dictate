@@ -1,8 +1,22 @@
 import unittest
 
-from backend.text_formatter import CodeTextFormatter
+from backend.text_formatter import PlainTextFormatter, CodeTextFormatter
 
-class TestTextWriterBasics(unittest.TestCase):
+class TestPlainTextFormatter(unittest.TestCase):
+    """Test basic text formatter stuff"""
+
+    def setUp(self):
+        self.formatter = PlainTextFormatter()
+
+    def test_1(self):
+        """Test closures with double quotes"""
+        the_text = "capital i don't know how many things i've got to do"
+        out_expect = "I don't know how many things I've got to do"
+        self.formatter.saw_user_action = True
+        out = self.formatter.format(the_text)
+        self.assertEqual(out, out_expect)
+
+class TestCodeTextFormatter(unittest.TestCase):
     """Test basic text formatter stuff"""
 
     def setUp(self):
