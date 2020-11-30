@@ -77,12 +77,18 @@
         "keys": ["enter"]
       }
     },
-    { "name": "double dash",
+    { "name": "_get status",
+      "command": "type",
+      "kwargs": {
+        "content": "git status"
+      }
+    },
+    { "name": "get status",
       "command": "command_chain",
       "kwargs": {
         "commands": [
-          "dash",
-          "dash"
+          "_get status",
+          "enter"
         ]
       }
     }

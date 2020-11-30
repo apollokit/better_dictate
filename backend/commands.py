@@ -29,19 +29,12 @@ class CommandExecutor:
 
 
 class KeystrokeExec(CommandExecutor):
-    """Executed a keystroke command, which is a series of 1 or more hotkeys
+    """Execute a keystroke command, which is a series of 1 or more hotkeys
     
     Command name: 'keystroke'
     cmd_def_kwargs: 
         'keys': list of hotkeys to execute. Can also include "delay <float
-            time>" to specify insertion of a delay
-    
-    Attributes:
-        hotkey_separator: [description]
-        modifiers_map: [description]
-        }: [description]
-        special_operand_keys: [description]
-        }: [description]
+            time>" to specify insertion of a delay    
     """
 
     # the separator used between separate keys within a hotkey, e.g. 'ctrl+a'
@@ -163,31 +156,55 @@ class KeystrokeExec(CommandExecutor):
                     # now cycle to "unstuck"
                     self.keyboard_ctlr.press(last_modifier)
                     self.keyboard_ctlr.release(last_modifier)
-            
-class ChainCommandExec(CommandExecutor):
+    
+class TypeExec(CommandExecutor):
+    """Execute a type command, which is just typing out a string
+    
+    Command name: 'type'
+    cmd_def_kwargs: 
+        'content': the string content to type    
+    """
+
     def __init__(self):
-        pass
+        self.keyboard_ctlr = Controller()
+        
+    def execute(self, stt_args: Optional[List[str]], content: List[str]):
+        """Execute command
+        
+        Args:
+            stt_args: see superclass
+            content: the string to type out
+        """
+        logger.debug("TypeExec: typing: '{}'".format(content))
 
-    def execute(self, commands: List[str]):
-        for command in commands:
-            pass
-            # execute command
+        # there should be no speech to text arguments for keystroke command
+        assert stt_args is None
+        self.keyboard_ctlr.type(content)
+    
+# forward declare this
+class CommandRegistry:
+    pass
 
+class ChainCommandExec(CommandExecutor):
+    def __init__(self, cmd_reg: CommandRegistry):
+        self.cmd_reg = cmd_reg
 
-
+    def execute(self, stt_args: Optional[List[str]], commands: List[str]):
+        # there should be no speech to text arguments for chain command
+        assert stt_args is None
+        
+        for cmd_name in commands:
+            executor = self.cmd_reg.get_command_executor(cmd_name)        
+            cmd_def_kwargs = self.cmd_reg.get_command_def_kwargs(cmd_name)
+            executor.execute(stt_args=None, **cmd_def_kwargs)
 
 CommandDefinition = Dict[str, Any]
 CommandDefinitionKwargs = Dict[str, Any]
 
-class CommandRegistry:
+# disabling function redefined because we need this class defined for chain command exec
+class CommandRegistry: # pylint: disable=function-redefined
     """Maintains a registry of all the known commands
     """
-    # the mapping
-    command_types = {
-        'keystroke': KeystrokeExec(), 
-        'delete': KeystrokeExec(), 
-        'command_chain': ChainCommandExec()
-    }
 
     def __init__(self, commands_def: List[CommandDefinition]):
         """Init
@@ -195,6 +212,14 @@ class CommandRegistry:
         Args:
             commands_def: the commands definition, loaded from file or elsewhere
         """
+
+        # the mapping
+        self.command_types = {
+            'keystroke': KeystrokeExec(), 
+            'delete': KeystrokeExec(), 
+            'command_chain': ChainCommandExec(self),
+            'type': TypeExec()
+        }
 
         # mapping from a command name to the executor instance for it
         self._reg_exec: Dict[str, CommandExecutor] = {}
@@ -476,15 +501,15 @@ class CommandDispatcher:
 #         for text in command_texts:
 #             self.command_exe.execute(text)
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    import json
-    with open('example_commands.json', 'r') as f:
-        commands_def_in = json.load(f)
-    cmd_reg = CommandRegistry(commands_def_in)
+#     import json
+#     with open('example_commands.json', 'r') as f:
+#         commands_def_in = json.load(f)
+#     cmd_reg = CommandRegistry(commands_def_in)
 
-    cmd_exec = CommandDispatcher(cmd_reg)
-    # import ipdb
-    # ipdb.set_trace()
-    # cmd_exec.dispatch('12 times dash')
-    cmd_exec.dispatch('3 dog')
+#     cmd_exec = CommandDispatcher(cmd_reg)
+#     # import ipdb
+#     # ipdb.set_trace()
+#     # cmd_exec.dispatch('12 times dash')
+#     cmd_exec.dispatch('3 dog')
