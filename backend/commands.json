@@ -86,6 +86,41 @@
           "enter"
         ]
       }
+    },
+    { "name": "snake",
+      "command_type": "case",
+      "kwargs": {
+        "case": "snake",
+        "in_place": false
+      }
+    },
+    { "name": "upper",
+      "command_type": "case",
+      "kwargs": {
+        "case": "upper",
+        "in_place": false
+      }
+    },
+    { "name": "title",
+      "command_type": "case",
+      "kwargs": {
+        "case": "title",
+        "in_place": false
+      }
+    },
+    { "name": "scream",
+      "command_type": "case",
+      "kwargs": {
+        "case": "screaming snake",
+        "in_place": false
+      }
+    },
+    { "name": "desert",
+      "command_type": "case",
+      "kwargs": {
+        "case": "camel",
+        "in_place": false
+      }
     }
 ]
 

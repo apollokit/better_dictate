@@ -10,6 +10,9 @@ from pynput.keyboard import Controller, Key
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+# a single controller for all command executors
+keyboard_controller = Controller()
+
 # forward declare this so it can be used in
 class CommandRegistry:
     """see implementation below"""
@@ -39,7 +42,7 @@ class CommandExecutor:
         raise NotImplementedError
 
 
-class KeystrokeExec(CommandExecutor):
+class KeystrokeCmdExec(CommandExecutor):
     """Execute a keystroke command, which is a series of 1 or more hotkeys
     
     Command name: 'keystroke'
@@ -78,7 +81,7 @@ class KeystrokeExec(CommandExecutor):
         """
         super().__init__(cmd_reg)
         self.keys = keys
-        self.keyboard_ctlr = Controller()
+        self.keyboard_ctlr = keyboard_controller
         
         # hard-coded config parameters for now...
         # running this on a linux box
@@ -134,7 +137,7 @@ class KeystrokeExec(CommandExecutor):
         Args:
             stt_args: see superclass
         """
-        logger.debug("KeystrokeExec: typing keys: '{}'".format(self.keys))
+        logger.debug("KeystrokeCmdExec: typing keys: '{}'".format(self.keys))
 
         # there should be no speech to text arguments for keystroke command
         assert stt_args is None
@@ -177,7 +180,7 @@ class KeystrokeExec(CommandExecutor):
                     self.keyboard_ctlr.press(last_modifier)
                     self.keyboard_ctlr.release(last_modifier)
     
-class TypeExec(CommandExecutor):
+class TypeCmdExec(CommandExecutor):
     """Execute a type command, which is just typing out a string
     
     Command name: 'type'
@@ -193,7 +196,7 @@ class TypeExec(CommandExecutor):
         """
         super().__init__(cmd_reg)
         self.content = content
-        self.keyboard_ctlr = Controller()
+        self.keyboard_ctlr = keyboard_controller
         
     def execute(self, stt_args: Optional[List[str]]):
         """Execute command
@@ -201,12 +204,91 @@ class TypeExec(CommandExecutor):
         Args:
             stt_args: see superclass
         """
-        logger.debug("TypeExec: typing: '{}'".format(self.content))
+        logger.debug("TypeCmdExec: typing: '{}'".format(self.content))
 
         # there should be no speech to text arguments for keystroke command
         assert stt_args is None
         self.keyboard_ctlr.type(self.content)
     
+class CaseCmdExec(CommandExecutor):
+    """Executea case command, which formats the text arguments with a specific case, like snake case
+    
+    Command name: 'case'
+    cmd_def_kwargs: 
+        'case': the case to use
+        'in_place': if true, will apply the case to the highlighted text
+
+    Cases:
+        upper: SLIM SHADY
+        lower: slim shady
+        title: Slim Shady
+        snake: slim_shady
+        screaming snake: SLIM_SHADY
+        camel: slimShady
+    """
+
+    CASES = ['upper', 'lower', 'title', 'snake', 'screaming snake', 'camel']
+
+    def __init__(self, cmd_reg: CommandRegistry, case: str, in_place: bool):
+        """Init
+        
+        Args:
+            cmd_reg: see superclass docs
+            case: see class docs
+            in_place: see class docs
+        """
+        super().__init__(cmd_reg)
+        self.case = case
+        # todo
+        if in_place:
+            raise NotImplementedError
+        self.in_place = in_place
+
+        self.keyboard_ctlr = keyboard_controller
+        
+    def execute(self, stt_args: Optional[List[str]]):
+        """Execute command
+        
+        Args:
+            stt_args: see superclass
+        """
+        if not self.in_place:
+            the_text = CaseCmdExec.format_case(
+                ' '.join(stt_args), self.case)
+            logger.debug("CaseCmdExec: typing: '{}'".format(the_text))
+            self.keyboard_ctlr.type(the_text)
+        else:
+            # there should be no speech to text arguments for this case
+            assert stt_args is None
+
+    @staticmethod
+    def format_case(text: str, case: str) -> str:
+        """Format a list of string tokens in the given case
+        
+        Args:
+            text: string of words separated by spaces
+            case: the case in which to format
+
+        Returns:
+            the formatted string
+        """
+        tokens = text.split()
+        if case == 'upper':
+            return ' '.join([token.upper() for token in tokens])
+        elif case == 'lower':
+            return ' '.join([token.lower() for token in tokens])
+        elif case == 'title':
+            return ' '.join([token.capitalize() for token in tokens])
+        elif case == 'snake':
+            return '_'.join(tokens)
+        elif case == 'screaming snake':
+            return '_'.join([token.upper() for token in tokens])
+        elif case == 'camel':
+            return ''.join(
+                [tokens[0].lower()] + [token.capitalize() for token in tokens[1:]])
+        else:
+            raise NotImplementedError
+
 
 
 class ChainCommandExec(CommandExecutor):
@@ -251,9 +333,10 @@ class CommandRegistry: # pylint: disable=function-redefined
 
     # nothing from string command type in the command definition to the class
     command_types = {
-        'keystroke': KeystrokeExec, 
+        'keystroke': KeystrokeCmdExec, 
         'chain': ChainCommandExec,
-        'type': TypeExec
+        'type': TypeCmdExec,
+        'case': CaseCmdExec
     }
 
     def __init__(self, commands_def: List[CommandDefinition]):

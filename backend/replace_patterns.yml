@@ -9,12 +9,18 @@
 "open perenne": "("
 "open sesame": "("
 "close sesame": ")"
+"opensesame": "("
 # =
 "equals sign": "="
 "equal sign": "="
 "death": "def"
+" underscore ": "_"
 "underscore": "_"
-". pie": ".py"
 " spacebar ": " "
 "spacebar ": " "
 " spacebar": " "
+"spacebar": " "
+# stuff with dot
+". pie": ".py"
+# note this might get annoying for long-form dictation
+". ": "."
