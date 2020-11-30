@@ -1,3 +1,5 @@
+from os import path
+import yaml
 import logging
 
 logger = logging.getLogger(__name__)
@@ -6,10 +8,17 @@ logger.setLevel(logging.DEBUG)
 END_OF_SENTENCE_CHARS = ['?','.','!']
 
 class TextFormatter:
+    # hard-code the replace patterns file for now
+    replace_patterns_file = path.join(path.dirname(__file__),
+        'replace_patterns.yml')
+
     def __init__(self):
         # controls handling of whitespace removal around ()
         self._remove_space_before_open_paren = False
         self._remove_space_after_close_paren = False
+
+        with open(self.replace_patterns_file, 'r') as f:
+            self._fixed_replace_patterns = yaml.load(f, Loader=yaml.FullLoader)
 
     def _log_step(self, step: int, the_text: str):
         logger.debug("Step %d: '%s'", step, the_text)
@@ -30,17 +39,8 @@ class TextFormatter:
         raise NotImplementedError
 
     def replace_fixed_patterns(self, the_text: str) -> str:
-        # replace specific patterns
-        the_text = the_text.replace(" i ", " I ")
-        the_text = the_text.replace("i've", "I've")
-        the_text = the_text.replace("quote", '"')
-        # for backticks
-        the_text = the_text.replace("backslider", '`')
-        the_text = the_text.replace("back slider", '`')
-        # (
-        the_text = the_text.replace("open perenne", '(')
-        # # replace "space" with " "
-        # the_text = the_text.replace(" space ", ' ')
+        for orig, replace in self._fixed_replace_patterns.items():
+            the_text = the_text.replace(orig, replace)
         return the_text
 
     def fix_closures(self, input_text) -> str:
@@ -115,6 +115,7 @@ class TextFormatter:
 
 class PlainTextFormatter(TextFormatter):
     def __init__(self):
+        super().__init__()
         
         # did we see an end of sentence at the end of the last utterance?
         self._saw_end_of_sentence = False
