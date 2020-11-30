@@ -142,19 +142,13 @@ class DictateParser:
 
 parser_inst = DictateParser()
 
-def parser_thread(raw_stt_output_q: Queue,
-        events: Dict[str, threading.Event]):
+def parser_thread(raw_stt_output_q: Queue):
     """ Execution thread for parsing and acting output from inference
     
     Args:
         raw_stt_output_q: contains output string text from the text to speech
             engine.
-        events: dictionary of events for coordination between threads
     """
-
-    # events
-    key_pressed_event = events['key_pressed_parser']
-    mouse_clicked_event = events['mouse_clicked_parser']
 
     logger.info("Parser thread ready")
     # the main thread loop. Go forever.
@@ -165,13 +159,13 @@ def parser_thread(raw_stt_output_q: Queue,
                 block=True, timeout=0.1)
 
             logger.debug("Got: '{}'".format(raw_utterance))
-            logger.debug("Saw mouse_clicked_event: {}".format(mouse_clicked_event.is_set()))
-            logger.debug("Saw key_pressed_event: {}".format(key_pressed_event.is_set()))
+            logger.debug("Saw mouse_clicked_event: {}".format(event_mngr.mouse_clicked.is_set()))
+            logger.debug("Saw key_pressed_event: {}".format(event_mngr.key_pressed.is_set()))
             logger.debug("Saw manual sentence end: {}".format(event_mngr.saw_manual_sentence_end.is_set()))
             
             # check if there was a user action since last time 
-            parser_inst.saw_user_action = mouse_clicked_event.is_set() or \
-                key_pressed_event.is_set()
+            parser_inst.saw_user_action = event_mngr.mouse_clicked.is_set() or \
+                event_mngr.key_pressed.is_set()
             # check if we should force capitalization
             parser_inst.force_capitalize = event_mngr.saw_manual_sentence_end.is_set()
             
@@ -186,8 +180,8 @@ def parser_thread(raw_stt_output_q: Queue,
             ## clear user action state
             # note we need to do this after typing out anything with the 
             # keyboard controller!
-            mouse_clicked_event.clear()
-            key_pressed_event.clear()
+            event_mngr.mouse_clicked.clear()
+            event_mngr.key_pressed.clear()
             event_mngr.saw_manual_sentence_end.clear()
             
         # queue was empty up to timeout
@@ -196,14 +190,14 @@ def parser_thread(raw_stt_output_q: Queue,
             if app_mngr.quitting: 
                 break
             
-if __name__ == "__main__":
-    import time
+# if __name__ == "__main__":
+#     import time
 
-    form = "%(asctime)s %(levelname)-8s %(name)-15s %(message)s"
-    logging.basicConfig(format=form,
-                        datefmt="%H:%M:%S")
+#     form = "%(asctime)s %(levelname)-8s %(name)-15s %(message)s"
+#     logging.basicConfig(format=form,
+#                         datefmt="%H:%M:%S")
 
-    parser_inst.saw_user_action = False
-    raw_utterance = "hey there i've got dog test"
-    time.sleep(2)
-    parser_inst.parse_and_execute(raw_utterance)
+#     parser_inst.saw_user_action = False
+#     raw_utterance = "hey there i've got dog test"
+#     time.sleep(2)
+#     parser_inst.parse_and_execute(raw_utterance)

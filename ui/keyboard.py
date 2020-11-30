@@ -7,7 +7,7 @@ import threading
 from pynput import keyboard
 from pynput.keyboard import Key, Controller
 
-from backend.manager import events, app_mngr, event_mngr
+from backend.manager import app_mngr, event_mngr
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -24,8 +24,6 @@ SLEEP_COUNT = 3
 # keys_for_parser_disclude = ['Key.right', 'Key.esc']
 keys_for_parser = ['Key.enter', 'Key.esc', 'Key.up', 'Key.down', 'Key.tab']
 
-key_pressed_parser_event = events['key_pressed_parser']
-
 class KeyboardManager():
     # counts up till sleep condition is met
     sleep_counter = 0
@@ -41,7 +39,7 @@ class KeyboardManager():
         #     # print("setting key_pressed_parser_event")
         #     key_pressed_parser_event.set()
 
-        key_pressed_parser_event.set()
+        event_mngr.key_pressed.set()
 
     def on_release(self,
         key: keyboard.KeyCode):

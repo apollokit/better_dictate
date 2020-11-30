@@ -13,7 +13,6 @@ logger.setLevel(logging.DEBUG)
 
 def webspeech_thread(
         raw_stt_output_q: Queue,
-        events: Dict[str, threading.Event],
         host: str = 'localhost',
         port: int = 5678
         ):
@@ -28,7 +27,6 @@ def webspeech_thread(
     Args:
         raw_stt_output_q: contains output string text from the webspeech
             speech to text engine.
-        events: dictionary of events for coordination between threads
     """
     event_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(event_loop)

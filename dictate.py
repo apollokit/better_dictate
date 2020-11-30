@@ -9,7 +9,6 @@ import click
 
 # from audio import audio_thread, read_audio_from_file
 from ui.app_indicator import app_indicator_thread, gtk_main_thread
-from backend.manager import events
 from ui.keyboard import keyb_listener
 from ui.mouse import mouse_listener
 from backend.webspeech import webspeech_thread
@@ -60,13 +59,11 @@ def go(
         futures.append(executor.submit(
             webspeech_thread, 
             raw_stt_output_q,
-            events,
             WEBSPEECH_HOST,
             WEBSPEECH_PORT))
         futures.append(executor.submit(
             parser_thread,
-            raw_stt_output_q,
-            events))
+            raw_stt_output_q))
         futures.append(executor.submit(
             app_indicator_thread))
         futures.append(executor.submit(
