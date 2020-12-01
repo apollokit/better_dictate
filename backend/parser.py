@@ -23,7 +23,7 @@ logger.setLevel(logging.DEBUG)
 
 class DictateParser:
     ESCAPE_WORD = 'dog'
-    ISLAND_COMMAND_WORD = 'do'
+    ISLAND_COMMAND_WORD = 'dog'
 
     # hard-code the commands file for now
     commands_file = path.join(path.dirname(__file__), 'commands.json')
