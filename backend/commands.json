@@ -67,6 +67,7 @@
       }
     },
     { "name": "enter",
+      "aliases": ["inter", "uline", "interstate"],
       "command_type": "keystroke",
       "kwargs": {
         "keys": ["enter"]
@@ -131,7 +132,8 @@
       "kwargs": {
         "commands": [
           "_git add all",
-          "enter"
+          "enter",
+          "git commit"
         ]
       }
     },
