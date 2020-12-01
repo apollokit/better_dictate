@@ -373,10 +373,12 @@ class CommandRegistry: # pylint: disable=function-redefined
         self._third_words = None
 
         for icommand, command_def in enumerate(commands_def):
-            logger.debug('(%d) Loading command: %s', icommand, command_def['name'])
             kwargs = command_def['kwargs']
-            self.commands[command_def['name']] = \
-                self.command_types[command_def['command_type']](self, **kwargs)
+            all_names = [command_def['name']] + command_def.get('aliases', [])
+            for name in all_names:
+                logger.debug('(%d) Loading command: %s', icommand, name)
+                self.commands[name] = \
+                    self.command_types[command_def['command_type']](self, **kwargs)
 
         self._set_cmd_name_words()
 
@@ -402,6 +404,8 @@ class CommandRegistry: # pylint: disable=function-redefined
                 self._second_words.append(words[1])
             if len(words) > 2:
                 self._third_words.append(words[2])
+            if len(words) > 3:
+                raise NotImplementedError
 
     def cmd_name_words(self, indx: int = 0) -> List[str]:
         """Get the words in the first, second, etc position in all command
@@ -570,7 +574,7 @@ class CommandDispatcher:
                     # go back a token because we're actually at the args
                     itoken -= 1
             # third word in the command name (optional)
-            elif state == 'command_name_1':
+            elif state == 'command_name_2':
                 # see if the token is a known third word
                 if token in self.cmd_reg.cmd_name_words(2):
                     cmd_name_list.append(token)

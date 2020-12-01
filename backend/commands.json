@@ -72,21 +72,86 @@
         "keys": ["enter"]
       }
     },
-    { "name": "_get status",
+
+    { "name": "_git status",
       "command_type": "type",
       "kwargs": {
         "content": "git status"
       }
     },
-    { "name": "get status",
+    { "name": "git status",
+      "aliases": ["status", "get status"],
       "command_type": "chain",
       "kwargs": {
         "commands": [
-          "_get status",
+          "_git status",
           "enter"
         ]
       }
     },
+    { "name": "_git pull",
+      "command_type": "type",
+      "kwargs": {
+        "content": "git pull"
+      }
+    },
+    { "name": "git pull",
+      "aliases": ["pull", "pole", "get pull", "get pole"],
+      "command_type": "chain",
+      "kwargs": {
+        "commands": [
+          "_git pull",
+          "enter"
+        ]
+      }
+    },
+    { "name": "git checkout",
+      "aliases": ["checkout", "check out", "get check out", "get checkout", "git check out"],
+      "command_type": "type",
+      "kwargs": {
+        "content": "git checkout "
+      }
+    },
+    { "name": "git commit",
+      "aliases": ["commit", "get commit", "get commits", "git commits"],
+      "command_type": "type",
+      "kwargs": {
+        "content": "git ci -m \""
+      }
+    },
+    { "name": "_git add all",
+      "command_type": "type",
+      "kwargs": {
+        "content": "git add --all"
+      }
+    },
+    { "name": "git add all",
+      "aliases": ["dad", "get add all", "get a doll", "get at all"],
+      "command_type": "chain",
+      "kwargs": {
+        "commands": [
+          "_git add all",
+          "enter"
+        ]
+      }
+    },
+    { "name": "_git push",
+      "command_type": "type",
+      "kwargs": {
+        "content": "git push"
+      }
+    },
+    { "name": "git push",
+      "aliases": ["push", "get push"],
+      "command_type": "chain",
+      "kwargs": {
+        "commands": [
+          "_git push",
+          "enter"
+        ]
+      }
+    },
+
     { "name": "snake",
       "command_type": "case",
       "kwargs": {
