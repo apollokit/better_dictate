@@ -7,6 +7,7 @@ from os import path
 import threading
 from queue import Queue, Empty
 import sys
+import time
 import traceback
 from typing import Dict
 
@@ -99,6 +100,10 @@ class DictateParser:
                         if in_command:
                             logger.info("DictateParser: dispatch command ({})".format(idispatch))
                             self.cmd_exec.dispatch(' '.join(command_words))
+                            # need to have a wait in here, or hot keys from a command can get confused with text to be typed afterwards
+                            sleep_time = 0.5
+                            logger.info("DictateParser: sleeping for %f", sleep_time)
+                            time.sleep(sleep_time)
                             command_words = []
                             idispatch += 1
                         # we're starting a command, so need to print out the raw text
