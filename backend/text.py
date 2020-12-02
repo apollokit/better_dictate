@@ -1,4 +1,5 @@
 import logging
+import time
 
 from pynput.keyboard import Controller
 
@@ -37,8 +38,21 @@ class TextWriter:
         curr_formatter = formatters[self.mode]
         formatted = curr_formatter.format(raw)
         
+        # special format characters that need some sleep time added in
+        special_format_chars = ['`', '}']
+
         logger.debug("Typing: '%s'", formatted)
-        self._keyboard_ctlr.type(formatted)
+        next_iter_do_sleep = False
+        for char in formatted:
+            # insert some sleep so we can trigger the application in which the typing is being done to format correctly
+            # for example, if we just spit out all the text at once, in slack we could end up with the literal "`blah`" instead of "<blah formatted as code>"
+            if next_iter_do_sleep:
+                # time.sleep(0.1) # this is sufficient for slack
+                time.sleep(0.2) # but need this for atlassian confluence
+                next_iter_do_sleep = False
+            if char in special_format_chars:
+                next_iter_do_sleep = True
+            self._keyboard_ctlr.tap(char)
 
         ## clear user action state
         # note we need to do this after typing out anything with the 

@@ -6,6 +6,12 @@
 # for backticks
 "backslider": "`"
 "back slider": "`"
+# note: these were meant for use in confluence, but doesn't actually work as desired. It seems like you have to have some delay while typing in order to get the braces to actually turn into the proper markup. FFS atlassian!
+"open braces ": "{{"
+" close braces": "}}"
+" closed braces": "}}"
+"close braces": "}}"
+"closed braces": "}}"
 # ( 
 "open perenne": "("
 "open sesame": "("
