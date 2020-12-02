@@ -1,3 +1,4 @@
+# Note that these will be applied in order, so if two transformations conflict with each other, put the preferable one first
 " i ": " I "
 "i've": "I've"
 "quotes": "\""
@@ -24,8 +25,10 @@
 ". pie": ".py"
 # note this might get annoying for long-form dictation
 ". ": "."
-" colon": ":"
-"colon": ":"
+" colony": ":"
+# " colon": ":"
+# "colon": ":"
+# "colon": ":"
 "january": "January"
 "february": "February"
 "march": "March"
