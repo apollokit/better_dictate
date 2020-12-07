@@ -27,7 +27,8 @@
     { "name": "pasta",
       "command_type": "keystroke",
       "kwargs": {
-        "keys": [" ", "ctrl+v"]
+        "keys": ["ctrl+v"],
+        "undo_keys": ["ctrl+z"]
       }
     },
     { "name": "blue",
@@ -188,6 +189,12 @@
         "case": "camel",
         "in_place": false
       }
+    },
+    { "name": "t-rex coffee",
+      "description": "In tmux (vim) highlight mode, place the cursor at the end of a cli command that you want to copy. This will highlight to the dollar sign before the cli command , and copy the text into the clipboard. For now, only works on a single line, not across multiple lines",
+      "command_type": "keystroke",
+      "kwargs": {
+        "keys": [" ", "shift+t", "$", "right", "enter"]
+      }
     }
 ]
-
