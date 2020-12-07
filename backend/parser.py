@@ -1,7 +1,7 @@
 """ Thread and utilities for audio input.
 """
 
-import json
+import yaml
 import logging
 from os import path
 import threading
@@ -26,13 +26,13 @@ class DictateParser:
     ISLAND_COMMAND_WORD = 'dog'
 
     # hard-code the commands file for now
-    commands_file = path.join(path.dirname(__file__), 'commands.json')
+    commands_file = path.join(path.dirname(__file__), 'commands.yml')
 
     def __init__(self):
         ## create the command dispatcher
 
         with open(self.commands_file, 'r') as f:
-            commands_def = json.load(f)
+            commands_def = yaml.load(f, Loader=yaml.FullLoader)
         self.cmd_reg = CommandRegistry(commands_def)
         self.cmd_exec = CommandDispatcher(self.cmd_reg)
         # lock to prevent updating the command registry in the middle of parsing
@@ -48,10 +48,10 @@ class DictateParser:
         logger.info('Loading commands from file: %s', self.commands_file)
         try:
             with open(self.commands_file, 'r') as f:
-                commands_def = json.load(f)
+                commands_def = yaml.load(f, Loader=yaml.FullLoader)
             self._cmd_reg_lock.acquire()
             self.cmd_reg.update_commands(commands_def)
-        except json.decoder.JSONDecodeError:
+        except yaml.scanner.ScannerError:
             logger.error('Error loading %s', self.commands_file)
         finally:
             self._cmd_reg_lock.release()

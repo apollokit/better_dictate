@@ -1,0 +1,147 @@
+# - name: dash
+#   command_type: keystroke
+#   kwargs:
+#     keys:
+#     - '-'
+# - name: test 1
+#   command_type: keystroke
+#   comment: delay is necessary because otherwise the super plus tab is not registered
+#     before the a and b
+#   kwargs:
+#     keys:
+#     - super+tab
+#     - delay 0.25
+#     - a
+#     - b
+#     - c
+- name: tabitha
+  command_type: keystroke
+  kwargs:
+    keys: ["super+tab"]
+- name: pasta
+  command_type: keystroke
+  kwargs:
+    keys: ["ctrl+v"]
+    # undo_keys: ["ctrl+z"]
+- name: blue
+  command_type: keystroke
+  kwargs:
+    keys: ["shift+left"]
+- name: blue word
+  command_type: keystroke
+  kwargs:
+    keys: ["ctrl+shift+left"]
+- name: green
+  command_type: keystroke
+  kwargs:
+    keys: ["shift+right"]
+- name: green word
+  command_type: keystroke
+  kwargs:
+    keys: ["ctrl+shift+right"]
+- name: right
+  command_type: keystroke
+  kwargs:
+    keys: ["right"]
+- name: left
+  command_type: keystroke
+  kwargs:
+    keys: ["left"]
+- name: enter
+  command_type: keystroke
+  aliases: ["inter", "uline", "interstate"]
+  kwargs:
+    keys: ["enter"]
+- name: _git status
+  command_type: type
+  kwargs:
+    content: git status
+- name: git status
+  command_type: chain
+  aliases: ["status", "get status"]
+  kwargs:
+    commands:
+    - _git status
+    - enter
+- name: _git pull
+  command_type: type
+  kwargs:
+    content: git pull
+- name: git pull
+  command_type: chain
+  aliases: ["pull", "pole", "get pull", "get pole"]
+  kwargs:
+    commands:
+    - _git pull
+    - enter
+- name: git checkout
+  command_type: type
+  aliases: ["checkout", "check out", "get check out", "get checkout", "git check out"]
+  kwargs:
+    content: 'git checkout '
+- name: git commit
+  command_type: type
+  aliases: ["commit", "get commit", "get commits", "git commits"]
+  kwargs:
+    content: 'git ci -m '
+- name: _git add all
+  command_type: type
+  kwargs:
+    content: git add --all
+- name: git add all
+  command_type: chain
+  aliases: ["dad", "get add all", "get a doll", "get at all"]
+  kwargs:
+    commands:
+    - _git add all
+    - enter
+    - git commit
+- name: _git push
+  command_type: type
+  kwargs:
+    content: git push
+- name: git push
+  command_type: chain
+  aliases: ["push", "get push"]
+  kwargs:
+    commands:
+    - _git push
+    - enter
+- name: snake
+  command_type: case
+  kwargs:
+    case: snake
+    in_place: false
+- name: upper
+  command_type: case
+  kwargs:
+    case: upper
+    in_place: false
+- name: title
+  command_type: case
+  kwargs:
+    case: title
+    in_place: false
+- name: scream
+  command_type: case
+  kwargs:
+    case: screaming snake
+    in_place: false
+- name: desert
+  command_type: case
+  kwargs:
+    case: camel
+    in_place: false
+- name: acronym
+  command_type: case
+  kwargs:
+    case: acronym
+    in_place: false
+- name: t-rex coffee
+  command_type: keystroke
+  description: In tmux (vim) highlight mode, place the cursor at the end of a cli
+    command that you want to copy. This will highlight to the dollar sign before the
+    cli command , and copy the text into the clipboard. For now, only works on a single
+    line, not across multiple lines
+  kwargs:
+    keys: [" ", "shift+t", "$", "right", "enter"]
