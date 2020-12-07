@@ -245,6 +245,10 @@ class CaseCmdExec(CommandExecutor):
         self.in_place = in_place
 
         self.keyboard_ctlr = keyboard_controller
+
+        # whether or not to prepend and append a white space before / after the formatted text
+        self.prepend_whitespace = True
+        self.append_whitespace = True
         
     def execute(self, stt_args: Optional[List[str]]):
         """Execute command
@@ -255,6 +259,10 @@ class CaseCmdExec(CommandExecutor):
         if not self.in_place:
             the_text = CaseCmdExec.format_case(
                 ' '.join(stt_args), self.case)
+            if self.prepend_whitespace:
+                the_text = ' ' + the_text
+            if self.append_whitespace:
+                the_text = the_text + ' '
             logger.debug("CaseCmdExec: typing: '{}'".format(the_text))
             self.keyboard_ctlr.type(the_text)
         else:
