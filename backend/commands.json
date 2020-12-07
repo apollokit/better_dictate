@@ -27,8 +27,7 @@
     { "name": "pasta",
       "command_type": "keystroke",
       "kwargs": {
-        "keys": ["ctrl+v"],
-        "undo_keys": ["ctrl+z"]
+        "keys": ["ctrl+v"]
       }
     },
     { "name": "blue",
@@ -187,6 +186,13 @@
       "command_type": "case",
       "kwargs": {
         "case": "camel",
+        "in_place": false
+      }
+    },
+    { "name": "acronym",
+      "command_type": "case",
+      "kwargs": {
+        "case": "acronym",
         "in_place": false
       }
     },

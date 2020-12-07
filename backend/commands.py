@@ -286,6 +286,9 @@ class CaseCmdExec(CommandExecutor):
         elif case == 'camel':
             return ''.join(
                 [tokens[0].lower()] + [token.capitalize() for token in tokens[1:]])
+        elif case == 'acronym':
+            first_letters = [token[0].upper() for token in tokens]
+            return ''.join(first_letters)
         else:
             raise NotImplementedError
 
