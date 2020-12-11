@@ -1,11 +1,16 @@
+from datetime import datetime, timedelta
 import logging
 import threading
+import time
 from typing import Dict
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # sleep_event: threading.Event(),
+
+# After this amount of time, the app manager will automatically put itself to sleep
+USER_INTERACTION_TIMEOUT = timedelta(minutes=10)
 
 class AppManager:
     """Manages application overall state in a thread safe manner
@@ -17,11 +22,22 @@ class AppManager:
     def __init__(self):
         # indicates sleep mode - when asleep, no speech should be acted on
         self._sleeping = False
+        # the last time the user interacted with the app
+        self._last_interaction_timestamp = datetime.utcnow()
+        self._interaction_timestamp_lock = threading.Lock()
         self._sleep_lock = threading.Lock()
         # indicates that the app is quitting
         self._quit = False
         self._quit_lock = threading.Lock()
 
+    def user_interacted(self):
+        """Signals the app manager that the user interacted with the app
+        """
+        # maybe this is overly zealous to use a lock here, but just in case
+        self._interaction_timestamp_lock.acquire()
+        self._last_interaction_timestamp = datetime.utcnow()
+        self._interaction_timestamp_lock.release()
+    
     def toggle_sleep(self):
         """Toggle sleep state
         """
@@ -33,6 +49,8 @@ class AppManager:
             self._sleeping = True
             logger.debug('going to sleep...')
         self._sleep_lock.release()
+
+        self.user_interacted()
 
     @property
     def sleeping(self) -> bool:
@@ -65,6 +83,23 @@ class AppManager:
         quit = self._quit
         self._quit_lock.release()
         return quit
+
+    def manager_thread(self):
+        """ Execution read for housekeeping stuff in the manager        
+        """
+
+        logger.info("Manager thread ready")
+        # the main thread loop. Go forever.
+        while True:
+            current_time = datetime.utcnow()
+            if not self.sleeping and (
+                    current_time - self._last_interaction_timestamp 
+                        > USER_INTERACTION_TIMEOUT):
+                logger.info("Been awhile since interaction, going to sleep...")
+                self.toggle_sleep()
+
+            # make sure to sleep so we don't hog things
+            time.sleep(1.0)                
 
 class EventManager:
     """A clearinghouse for coordinating events between threads"""

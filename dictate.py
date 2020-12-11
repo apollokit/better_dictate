@@ -11,8 +11,9 @@ import click
 from ui.app_indicator import app_indicator_thread, gtk_main_thread
 from ui.keyboard import keyb_listener
 from ui.mouse import mouse_listener
-from backend.webspeech import webspeech_thread
+from backend.manager import app_mngr
 from backend.parser import parser_thread
+from backend.webspeech import webspeech_thread
 
 WEBSPEECH_HOST='localhost'
 WEBSPEECH_PORT=5678
@@ -54,7 +55,7 @@ def go(
     mouse_listener.start()
 
     # note that shutdown/quit event can be invoked from app_indicator.py
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         futures = []
         futures.append(executor.submit(
             webspeech_thread, 
@@ -68,6 +69,8 @@ def go(
             app_indicator_thread))
         futures.append(executor.submit(
             gtk_main_thread))
+        futures.append(executor.submit(
+            app_mngr.manager_thread))
         for future in as_completed(futures):
             logger.debug(f"Thread exit: {repr(future.exception())}")
 

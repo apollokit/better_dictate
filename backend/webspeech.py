@@ -58,7 +58,7 @@ def webspeech_thread(
                     logger.info("Sent start command to webspeech")
                     active = True
                 elif msg['cmd'] == "end":
-                    logger.info("Saw end command from webspeech")
+                    # logger.info("Saw end command from webspeech")
                     active = False
                 # If we received stt content from web speech
                 # Example: {'cmd': 'phrase', 'results': [{'final': True, 'transcript': ' what day', 'confidence': 0.9060565829277039}]}
@@ -68,6 +68,8 @@ def webspeech_thread(
                     # browser anyway, if we're sleeping
                     if app_mngr.sleeping:
                         continue
+
+                    app_mngr.user_interacted()
 
                     results = msg['results']
                     # not sure what it means if there is more than one result, so
