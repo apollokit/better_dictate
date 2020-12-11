@@ -5,23 +5,24 @@
 <head>
 <title>BetterDictate WebSpeech Proxy</title>
 <script type="text/javascript">
-  var active = false;
-  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let active = false;
+  let SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
     document.write("This browser does not appear to support Web Speech.<br/>");
-  } else {
-    var final = "";
+  } 
+  else {
+    let final = "";
     
     function connect() {
-      var ws = new WebSocket('ws://localhost:5678/');
+      let ws = new WebSocket('ws://localhost:5678/');
       ws.onopen = function(e) {
-        textconnected.innerText = "connected";
+        textconnected.innerText = "ws: connected";
         texterror.innerText = "";
         ws.send(JSON.stringify({"cmd": "hello"}));
       }
       ws.onclose = function(e) {
         active = false;
-        textconnected.innerText = "disconnected";
+        textconnected.innerText = "ws: disconnected";
         speech.stop();
       }
       ws.onerror = function(e) {
@@ -30,24 +31,25 @@
       }
       ws.onmessage = function(e) {
         console.log(e);
-        var data = JSON.parse(e.data);
+        let data = JSON.parse(e.data);
         if (data.cmd == "start") {
-          speech.lang = data.lang;
-          textlang.innerText = data.lang;
           if (! active) {
             active = true;
             speech.start();
           }
-        } else if (data.cmd == "stop") {
+        } 
+        else if (data.cmd == "stop") {
           active = false;
           speech.stop();
-        } else if (data.cmd == "reload") {
+        } 
+        else if (data.cmd == "reload") {
           window.location.reload();
         }
       }
       return ws;
     }
-    var ws;
+
+    let ws;
     function reconnect() {
       ws = connect();
       ws.addEventListener('close', function(e) {
@@ -56,18 +58,20 @@
     }
     reconnect();
 
-    var speech = new SpeechRecognition();
+    let speech = new SpeechRecognition();
     speech.lang = 'en-US';
     speech.continuous = true;
     speech.interimResults = true;
 
     speech.onstart = function(e) {
       if (final) final += " ";
-      textrecording.innerText = "recording";
+      textrecording.innerText = "webspeech: recording";
+      textrecording.style.color = "blue";
       ws.send(JSON.stringify({"cmd": "start"}));
     }
     speech.onend = function(e) {
-      textrecording.innerText = "not recording";
+      textrecording.innerText = "webspeech: not recording";
+      textrecording.style.color = "red";
       ws.send(JSON.stringify({"cmd": "end"}));
       setTimeout(function() {
         if (active) {
@@ -76,7 +80,7 @@
       }, 250);
     }
     speech.onerror = function(e) {
-      texterror.innerText = `error: ${e.error}`;
+      texterror.innerText = `webspeech error: ${e.error}`;
       ws.send(JSON.stringify({"cmd": "error", "error": e.error}));
     }
     speech.onsoundstart  = function(e) { ws.send(JSON.stringify({"cmd": "soundstart"})); }
@@ -84,12 +88,12 @@
     speech.onspeechstart = function(e) { ws.send(JSON.stringify({"cmd": "speechstart"})); }
     speech.onspeechend   = function(e) { ws.send(JSON.stringify({"cmd": "speechend"})); }
     speech.onresult = function(e) {
-      var interim = "";
-      var final = "";
-      var results = [];
-      for (var i = e.resultIndex; i < e.results.length; i++) {
-        var r = e.results[i];
-        var result = {
+      let interim = "";
+      let final = "";
+      let results = [];
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        let r = e.results[i];
+        let result = {
           "final": r.isFinal,
           "transcript": r[0].transcript,
           "confidence": r[0].confidence,
@@ -104,17 +108,17 @@
       if (results) {
         ws.send(JSON.stringify({"cmd": "phrase", "results": results}));
       }
-      textstatus.innerText = final + interim;
+      stt_output.innerText = final + interim;
+      stt_output.style.fontWeight = "bold";
     }
   }
 </script>
 </head>
 <body>
-<span>WebSpeech Proxy:</span>
-<span id="textlang">en_US</span><span>,</span>
-<span id="textconnected">disconnected</span><span>,</span>
-<span id="textrecording">not recording</span><span>,</span>
-<span id="texterror"></span>
-<div id="textstatus"></div>
+<div>WebSpeech Proxy:</div>
+<div id="textconnected">disconnected</div>
+<div id="textrecording">not recording</div>
+<div id="texterror"></div>
+<div id="stt_output"></div>
 </body>
 </html>

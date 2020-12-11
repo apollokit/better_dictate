@@ -40,10 +40,16 @@ def webspeech_thread(
 
         logger.info("Webspeech server started")
         shutdown = False
+
+        # whether or not webspeech in browser has been put to sleep
+        # the thread will take action to keep these two aligned
+        webspeech_sleeping = app_mngr.sleeping
+
         while True and not shutdown:
             try:
                 # msg = json.loads(await websocket.recv())
-                raw_msg = await asyncio.wait_for(websocket.recv(), timeout=1.0)
+                raw_msg = await asyncio.wait_for(websocket.recv(),
+                    timeout=0.5)
                 msg = json.loads(raw_msg)
                 
                 #  we receive "hello"  from the webspeech web
@@ -58,6 +64,8 @@ def webspeech_thread(
                 # Example: {'cmd': 'phrase', 'results': [{'final': True, 'transcript': ' what day', 'confidence': 0.9060565829277039}]}
                 elif msg['cmd'] == "phrase":
                     # If we're asleep, don't do anything for now
+                    # note that we shouldn't be receiving text from the
+                    # browser anyway, if we're sleeping
                     if app_mngr.sleeping:
                         continue
 
@@ -75,8 +83,16 @@ def webspeech_thread(
                         logger.info("Adding to output queue: %s", text)
                         raw_stt_output_q.put(text)
 
+
             # upon timeout of websocket.recv(), we can do any required houskeeping
             except asyncio.TimeoutError:
+                if app_mngr.sleeping and not webspeech_sleeping:
+                    await websocket.send('{"cmd": "stop"}')
+                    webspeech_sleeping = True
+                elif not app_mngr.sleeping and webspeech_sleeping:
+                    await websocket.send('{"cmd": "start"}')
+                    webspeech_sleeping = False
+
                 # shutdown if we received the signal
                 if app_mngr.quitting:
                     logger.info("saw shutdown") 
