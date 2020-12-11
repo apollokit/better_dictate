@@ -31,12 +31,7 @@ def webspeech_thread(
     event_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(event_loop)
 
-    # whether or not webspeech is active in browser
-    active = False
-
     async def webspeech_transact(websocket, path):
-        # need this because of closure rules. See Fluent Python book, pg 201
-        nonlocal active
 
         logger.info("Webspeech server started")
         shutdown = False
@@ -56,10 +51,9 @@ def webspeech_thread(
                 if msg['cmd'] == "hello":
                     await websocket.send('{"cmd": "start"}')
                     logger.info("Sent start command to webspeech")
-                    active = True
-                elif msg['cmd'] == "end":
-                    # logger.info("Saw end command from webspeech")
-                    active = False
+                # we hear from web speech that it has started
+                elif msg['cmd'] == "start":
+                    webspeech_sleeping = False
                 # If we received stt content from web speech
                 # Example: {'cmd': 'phrase', 'results': [{'final': True, 'transcript': ' what day', 'confidence': 0.9060565829277039}]}
                 elif msg['cmd'] == "phrase":

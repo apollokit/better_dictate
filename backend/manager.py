@@ -21,7 +21,8 @@ class AppManager:
 
     def __init__(self):
         # indicates sleep mode - when asleep, no speech should be acted on
-        self._sleeping = False
+        # start asleep at the beginning
+        self._sleeping = True
         # the last time the user interacted with the app
         self._last_interaction_timestamp = datetime.utcnow()
         self._interaction_timestamp_lock = threading.Lock()
