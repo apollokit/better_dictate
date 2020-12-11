@@ -145,3 +145,36 @@
     line, not across multiple lines
   kwargs:
     keys: [" ", "shift+t", "$", "right", "enter"]
+- name: _confluence open braces
+  command_type: keystroke
+  comment: Type open braces for code formatting within confluence
+  kwargs:
+    keys:
+    - "{"
+    - "{"
+- name: _confluence close braces
+  command_type: keystroke
+  comment: Type close braces for code formatting within confluence
+  kwargs:
+    keys:
+    - delay 0.20 # need a delay so that it triggers code formatting
+    - "}"
+    - "}"
+- name: code pasta
+  command_type: chain
+  aliases: ["coat pasta"]
+  description: Paste code with proper formatting for current app
+  kwargs:
+    commands:
+    - _confluence open braces
+    - pasta
+    - _confluence close braces
+# - name: zelda pasta
+#   command_type: chain
+#   aliases: ["coat pasta"]
+#   description: Paste code with proper formatting for current app
+#   kwargs:
+#     commands:
+#     - _confluence open braces
+#     - pasta
+#     - _confluence close braces

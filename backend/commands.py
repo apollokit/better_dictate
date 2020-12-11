@@ -247,8 +247,8 @@ class CaseCmdExec(CommandExecutor):
         self.keyboard_ctlr = keyboard_controller
 
         # whether or not to prepend and append a white space before / after the formatted text
-        self.prepend_whitespace = True
-        self.append_whitespace = True
+        self.prepend_whitespace = False
+        self.append_whitespace = False
         
     def execute(self, stt_args: Optional[List[str]]):
         """Execute command
