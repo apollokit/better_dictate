@@ -139,6 +139,11 @@
   kwargs:
     case: acronym
     in_place: false
+- name: pascal
+  command_type: case
+  kwargs:
+    case: pascal
+    in_place: false
 - name: t-rex coffee
   command_type: keystroke
   description: In tmux (vim) highlight mode, place the cursor at the end of a cli
@@ -180,3 +185,16 @@
 #     - _confluence open braces
 #     - pasta
 #     - _confluence close braces
+- name: find
+  command_type: sublime_find
+  aliases: ["finds"]
+  kwargs:
+    # technically, direction is not needed here because that's controlled by my hotkey configuration in sublime. Shrug.
+    direction: ["forward"]
+    find_hotkey: "ctrl+f"
+- name: reverse
+  command_type: sublime_find
+  kwargs:
+    # technically, direction is not needed here because that's controlled by my hotkey configuration in sublime. Shrug.
+    direction: ["backward"]
+    find_hotkey: "ctrl+."

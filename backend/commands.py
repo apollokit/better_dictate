@@ -1,14 +1,20 @@
 # pylint: disable=arguments-differ
 
-from enum import Enum
+
 import logging
 import time
 from typing import List, Dict, Any, Tuple, Optional
 
 from pynput.keyboard import Controller, Key
 
+from backend.keystrokes import execute_modified_keystroke
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+
+# the separator used between separate keys within a hotkey, e.g. 'ctrl+a'
+HOTKEY_SEPARATOR = '+'
 
 # a single controller for all command executors
 keyboard_controller = Controller()
@@ -31,13 +37,13 @@ class CommandExecutor:
         """
         self.cmd_reg = cmd_reg
 
-    def execute(self, stt_args: Optional[List[str]]):
+    def execute(self, stt_args: Optional[str] = None):
         """Execute the command, with given arguments
         
         should be overridden in subclasses
 
         Args:
-            stt_args: list of string arguments received from speech to text
+            stt_args: string of additional arguments received for an individual command
         """
         raise NotImplementedError
 
@@ -56,23 +62,6 @@ class KeystrokeCmdExec(CommandExecutor):
             Example: ['ctrl-c','delay 0.25','alt-v','tab','enter']
     """
 
-    # the separator used between separate keys within a hotkey, e.g. 'ctrl+a'
-    hotkey_separator = '+'
-    modifiers_map = {
-        'ctrl': Key.ctrl,
-        'alt': Key.alt,
-        'super': Key.cmd,
-        'shift': Key.shift,
-    }
-    special_operand_keys = {
-        'tab': Key.tab,
-        'left': Key.left,
-        'up': Key.up,
-        'right': Key.right,
-        'down': Key.down,
-        'enter': Key.enter
-    }
-
     def __init__(self, cmd_reg: CommandRegistry, keys: List[str]):
         """Init
                 
@@ -82,53 +71,9 @@ class KeystrokeCmdExec(CommandExecutor):
         super().__init__(cmd_reg)
         self.keys = keys
         self.keyboard_ctlr = keyboard_controller
+        self.hotkey_separator = HOTKEY_SEPARATOR
         
-        # hard-coded config parameters for now...
-        # running this on a linux box
-        self.is_linux = True
-        # using sticky keys
-        self.using_sticky_keys = True
-
-    def parse_hotkey(self, hotkey: str) -> Tuple[List[Enum], str, bool]:
-        """Parses a string specification for a hotkey into usable keys
-        
-        Given an input like 'ctrl-alt-a', returns a tuple of 
-            (Key.ctrl, Key.alt, 'a'). Here, 'a' is the "operand" key.
-        
-        Args:
-            hotkey: the hotkey string specifier
-        
-        Returns:
-            a tuple of:
-                - a list of modifiers Key.blah (the type of which is an Enum)
-                - the string for the "operand" key.
-                - a flag indicating if the key was a "special operand", i.e. one 
-                    of the pyinput keys we have to explicitly map. This has
-                    implications for later handling.
-        """
-        # todo: lru cache parse_hotkey()? kinda innefficient to run every time...
-
-        hotkey_keys = hotkey.split(self.hotkey_separator)
-        # modifiers should be at the front
-        modifiers = hotkey_keys[:-1]
-        operand_key = hotkey_keys[-1]
-        
-        # make sure they're all unique. we could end up with tricky bugs otherwise
-        assert(len(modifiers)) == len(set(modifiers))
-        modifiers_obj = [self.modifiers_map[mod] for mod in modifiers]
-
-        assert operand_key not in self.modifiers_map
-        # if there is a mapping in special operand keys, get it. otherwise
-        # default to itself.
-        if operand_key in self.special_operand_keys.keys():
-            operand_key_mapped = self.special_operand_keys[operand_key]
-            was_special_operand = True
-        else:
-            operand_key_mapped = operand_key
-            was_special_operand = False
-        return modifiers_obj, operand_key_mapped, was_special_operand
-
-    def execute(self, stt_args: Optional[List[str]]):
+    def execute(self, stt_args: Optional[str] = None):
         """Execute command
 
         Note that when using system hotkeys like super+tab, you may need to
@@ -148,37 +93,9 @@ class KeystrokeCmdExec(CommandExecutor):
                 time.sleep(delay_time)
                 continue
 
-            modifiers, operand_key, was_special_operand = self.parse_hotkey(hotkey)
+            execute_modified_keystroke(self.keyboard_ctlr, hotkey, self.hotkey_separator)
 
-            ## press the keys
-            # see https://pynput.readthedocs.io/en/latest/keyboard.html
-            # WARNING! does not work with sticky keys!
-            # unfortunately I couldn't get this to work consistently with sticky
-            # keys. Sometimes the modifiers are left engaged, other times not.
-            # Behaviour is weird too with multiple modifier keys.
             
-            if len(modifiers) > 0:
-                last_modifier = modifiers[-1]
-            with self.keyboard_ctlr.pressed(*modifiers):
-                self.keyboard_ctlr.press(operand_key)
-                self.keyboard_ctlr.release(operand_key)
-
-            if self.is_linux and self.using_sticky_keys:
-                ## Special handling for sticky keys...
-                # if using sticky keys, pyinput explicits strange behavior from the
-                # Xorg system...when using modifiers with non-special keys (like 
-                # 'a', '6', or '~' whereas special would include Key.tab and Key.space)
-                # not all of the modifiers will be cleared upon keypress of the 
-                # operand_key. for whatever reason, the last modifier in the modifiers 
-                # list won't be cleared.  we do that explicitly here.
-                if len(modifiers) > 0 and not was_special_operand:
-                    # we start out in sticky "single press" mode...cycle to 
-                    # sticky latched
-                    self.keyboard_ctlr.press(last_modifier)
-                    self.keyboard_ctlr.release(last_modifier)
-                    # now cycle to "unstuck"
-                    self.keyboard_ctlr.press(last_modifier)
-                    self.keyboard_ctlr.release(last_modifier)
     
 class TypeCmdExec(CommandExecutor):
     """Execute a type command, which is just typing out a string
@@ -198,7 +115,7 @@ class TypeCmdExec(CommandExecutor):
         self.content = content
         self.keyboard_ctlr = keyboard_controller
         
-    def execute(self, stt_args: Optional[List[str]]):
+    def execute(self, stt_args: Optional[str] = None):
         """Execute command
         
         Args:
@@ -227,7 +144,15 @@ class CaseCmdExec(CommandExecutor):
         camel: slimShady
     """
 
-    CASES = ['upper', 'lower', 'title', 'snake', 'screaming snake', 'camel']
+    CASES = [
+        'upper', 
+        'lower', 
+        'title', 
+        'snake', 
+        'screaming snake', 
+        'camel',
+        'pascal'
+    ]
 
     def __init__(self, cmd_reg: CommandRegistry, case: str, in_place: bool):
         """Init
@@ -250,15 +175,14 @@ class CaseCmdExec(CommandExecutor):
         self.prepend_whitespace = False
         self.append_whitespace = False
         
-    def execute(self, stt_args: Optional[List[str]]):
+    def execute(self, stt_args: Optional[str] = None):
         """Execute command
         
         Args:
             stt_args: see superclass
         """
         if not self.in_place:
-            the_text = CaseCmdExec.format_case(
-                ' '.join(stt_args), self.case)
+            the_text = CaseCmdExec.format_case(stt_args, self.case)
             if self.prepend_whitespace:
                 the_text = ' ' + the_text
             if self.append_whitespace:
@@ -270,7 +194,7 @@ class CaseCmdExec(CommandExecutor):
             assert stt_args is None
 
     @staticmethod
-    def format_case(text: str, case: str) -> str:
+    def format_case(text: str, case: str) -> str: #pylint: disable=too-many-return-statements
         """Format a list of string tokens in the given case
         
         Args:
@@ -287,6 +211,8 @@ class CaseCmdExec(CommandExecutor):
             return ' '.join([token.lower() for token in tokens])
         elif case == 'title':
             return ' '.join([token.capitalize() for token in tokens])
+        elif case == 'pascal':
+            return ''.join([token.capitalize() for token in tokens])
         elif case == 'snake':
             return '_'.join(tokens)
         elif case == 'screaming snake':
@@ -300,7 +226,60 @@ class CaseCmdExec(CommandExecutor):
         else:
             raise NotImplementedError
 
+class SublimeFindCmdExec(CommandExecutor):
+    """Execute a sublime find command to move to desired text within the current file
+    
+    Command name: 'sublime_find'
+    cmd_def_kwargs:
+        'direction': the direction in which to do the find, either forwards (down) or backwards (up)
+    """
 
+    def __init__(self, cmd_reg: CommandRegistry, 
+            direction: str, find_hotkey: str = 'ctrl+f'):
+        """Init
+        
+        Args:
+            direction: see class docs
+        """
+        super().__init__(cmd_reg)
+        self.direction = direction
+        self.keyboard_ctlr = keyboard_controller
+        self.hotkey_separator = HOTKEY_SEPARATOR
+        self.find_hotkey = find_hotkey
+
+    def execute(self, stt_args: Optional[str] = None):
+        """Execute command
+        
+        Args:
+            stt_args: see superclass
+        """
+
+        if not stt_args:
+            logger.debug("SublimeFindCmdExec: found no string to search for")
+
+        # the expected format is "<string content to search>; number multiplier", where number multipliers format is like "two times", or "3"
+        try:
+            content, multiplier = stt_args.split(';')
+        except ValueError:
+            # in this case, make sure that there's not a semicolon in the string at all (the value error could be because there were multiple semicolons, which is unexpected in current implementation)
+            assert stt_args.find(';') == -1
+
+            # just assume the whole thing is content in this case
+            content = stt_args
+
+        logger.debug("SublimeFindCmdExec: searching for '{}'".format(content))
+
+        # todo: currently we don't do anything with the multiplier.fix that
+
+        # enter the find dialog in sublime text
+        execute_modified_keystroke(self.keyboard_ctlr, self.find_hotkey, self.hotkey_separator)
+        
+        # type the search string
+        self.keyboard_ctlr.type(content)
+
+        # hit enter to drop the cursor to the left of the search string
+        self.keyboard_ctlr.tap(Key.enter)
+    
 
 class ChainCommandExec(CommandExecutor):
     """Execute a chain command, which is multiple commands strung together
@@ -319,7 +298,7 @@ class ChainCommandExec(CommandExecutor):
         super().__init__(cmd_reg)
         self.commands = commands
 
-    def execute(self, stt_args: Optional[List[str]]):
+    def execute(self, stt_args: Optional[str] = None):
         """Execute command
         
         Args:
@@ -347,7 +326,8 @@ class CommandRegistry: # pylint: disable=function-redefined
         'keystroke': KeystrokeCmdExec, 
         'chain': ChainCommandExec,
         'type': TypeCmdExec,
-        'case': CaseCmdExec
+        'case': CaseCmdExec,
+        'sublime_find': SublimeFindCmdExec
     }
 
     def __init__(self, commands_def: List[CommandDefinition]):
@@ -516,7 +496,7 @@ class CommandDispatcher:
             cmd_multiplier = fixed_conversions.get(token, None)
         return cmd_multiplier
 
-    def parse(self, command_text: str) -> Tuple[str, int, List[str]]: #pylint: disable=too-many-branches
+    def parse(self, command_text: str) -> Tuple[str, int, str]: #pylint: disable=too-many-branches
         """Parse a command text
         
         Rurns a raw command string into arguments for actual execution
@@ -526,7 +506,7 @@ class CommandDispatcher:
                 speech-to-text engine
         
         Returns:
-            Tuple the command name, the execution multiplier, and arguments for
+            Tuple the command name, the execution multiplier, and remaining argument text for
                 the command
         """
         tokens = command_text.split(' ')
@@ -608,6 +588,10 @@ class CommandDispatcher:
         cmd_name = ' '.join(cmd_name_list)
         assert cmd_name in self.cmd_reg.cmd_names
         
+        if cmd_args:
+            # join together the tokens and output as a full string
+            cmd_args = ' '.join(cmd_args)
+
         return cmd_name, cmd_multiplier, cmd_args
 
 
