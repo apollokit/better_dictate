@@ -118,6 +118,7 @@
     case: upper
     in_place: false
 - name: title
+  aliases: ["capital"]
   command_type: case
   kwargs:
     case: title
@@ -133,6 +134,7 @@
     case: camel
     in_place: false
 - name: acronym
+  aliases: ["upper letters"]
   command_type: case
   kwargs:
     case: acronym
