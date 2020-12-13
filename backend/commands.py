@@ -19,6 +19,117 @@ HOTKEY_SEPARATOR = '+'
 # a single controller for all command executors
 keyboard_controller = Controller()
 
+class CommandMultiplierParser:
+    """Handles the parsing of command multiplier strings
+    
+    Command multiplier strings are used to specify the number of times that a command must be executed. Examples: '3 times', '4 x'
+    """
+
+    # all the different tokens that can be used for a multiplier post fix
+    # note that the multiplier postfix is optional note.
+    postfixes = ['*', 'times', 'times', 'x', 'X']
+
+    # hard-coded conversions from tokens to numbers. Accounts for edge
+    # cases we've seen
+    multiplier_fixed_conversions = {
+        'to': 2,
+        'two': 2,
+        'three': 3,
+        'for': 4,
+    }
+
+    @staticmethod
+    def check_valid_multiplier_token(token: str):
+        """Returns true if the string token could be interpreted as a command multiplier token
+        
+        This is useful for checking if a command name would clash with a command multiplier string
+        
+        Args:
+            token: the string to check for validity
+        
+        Returns:
+            True if the token could be a multiplier token
+        """
+
+        ## is it valid as the first number token in a command multiplier?
+        try:
+            int(token)
+            # it's an integer, therefore it is a valid multiplier token
+            return True
+        except ValueError:
+            # it's not an integer
+            pass
+
+        if token in CommandMultiplierParser.multiplier_fixed_conversions.keys():
+            return True
+
+        ## is it valid as the multiplier postfix in a command multiplier?
+        if token in CommandMultiplierParser.postfixes:
+            return True
+
+        return False
+
+    @staticmethod
+    def convert_multiplier(token: str) -> Optional[int]:
+        """Convert a command multiplier token into the actual number
+                
+        Args:
+            token: the token from the raw command
+        
+        Returns:
+            the converted multiplier, or None if it couldn't be converted
+        """
+
+        # first see if it's an integer
+        try:
+            cmd_multiplier = int(token)
+        # if we don't find a number here, then see if it's in the fixed
+        # conversions dictionary
+        except ValueError:
+            cmd_multiplier = CommandMultiplierParser.multiplier_fixed_conversions.get(token, None)
+        return cmd_multiplier
+
+    @staticmethod
+    def parse_multiplier_string(
+            multiplier_string: str) -> Tuple[int, int]:
+        """Determines the multiplier number from a raw multiplier string
+        
+        Args:
+            multiplier_string: the most player string, see class 
+                documentation for examples
+        
+        Returns:
+            Tuple of:
+            - the multiplier number
+            - the number of tokens used from the multiplier string to parse 
+                the multiplier number. This is useful if the input multiplier
+                string could have trailing tokens that are not actual 
+                multiplier string tokens
+        """
+
+        tokens_used = 0
+
+        tokens = multiplier_string.split()
+        
+        ## look for the multiplier number
+        cmd_multiplier = CommandMultiplierParser.convert_multiplier(
+            tokens[0])
+        # if a valid multiplier was not found, the multiplier is 
+        # implicitly 1
+        if cmd_multiplier is None:
+            cmd_multiplier = 1
+            return cmd_multiplier, tokens_used
+        else:
+            tokens_used += 1
+
+        ## look for the multiplier postfix
+
+        if tokens[1] in CommandMultiplierParser.postfixes:
+            tokens_used += 1
+
+        return cmd_multiplier, tokens_used
+
+
 # forward declare this so it can be used in
 class CommandRegistry:
     """see implementation below"""
@@ -257,25 +368,34 @@ class SublimeFindCmdExec(CommandExecutor):
         if not stt_args:
             logger.debug("SublimeFindCmdExec: found no string to search for")
 
-        # the expected format is "<string content to search>; number multiplier", where number multipliers format is like "two times", or "3"
+        multiplier_separator_substr = ' pipe '
+
+        # the expected format is "<string content to search><multiplier_separator_substr><multiplier string>", where  multiplier format is per CommandMultiplierParser
         try:
-            content, multiplier = stt_args.split(';')
+            content, multiplier_str = stt_args.split(multiplier_separator_substr)
+            
+            # 
+            cmd_multiplier, _ = CommandMultiplierParser.parse_multiplier_string(multiplier_str)
+            num_tabs = cmd_multiplier
+        
         except ValueError:
             # in this case, make sure that there's not a semicolon in the string at all (the value error could be because there were multiple semicolons, which is unexpected in current implementation)
-            assert stt_args.find(';') == -1
+            assert stt_args.find(multiplier_separator_substr) == -1
 
             # just assume the whole thing is content in this case
             content = stt_args
+            num_tabs = 0
 
-        logger.debug("SublimeFindCmdExec: searching for '{}'".format(content))
-
-        # todo: currently we don't do anything with the multiplier.fix that
+        logger.debug("SublimeFindCmdExec: searching for '{}', tabbing {} times".format(content, num_tabs))
 
         # enter the find dialog in sublime text
         execute_modified_keystroke(self.keyboard_ctlr, self.find_hotkey, self.hotkey_separator)
         
         # type the search string
         self.keyboard_ctlr.type(content)
+        
+        for icommand in range(num_tabs):
+            self.keyboard_ctlr.tap(Key.tab)
 
         # hit enter to drop the cursor to the left of the search string
         self.keyboard_ctlr.tap(Key.enter)
@@ -390,7 +510,12 @@ class CommandRegistry: # pylint: disable=function-redefined
         self._third_words = []
         for cmd_name in self.cmd_names:
             words = cmd_name.split()
-            self._first_words.append(words[0])
+            first_word = words[0]
+            # command names should have no conflicts with command multiplier tokens
+            cmd_name_invalid = CommandMultiplierParser.check_valid_multiplier_token(first_word)
+            if cmd_name_invalid:
+                raise ValueError(f'Token "{first_word}" is not a valid beginning of a command name. It could be interpreted as a command multiplier')
+            self._first_words.append(first_word)
             if len(words) > 1:
                 self._second_words.append(words[1])
             if len(words) > 2:
@@ -430,17 +555,12 @@ class CommandRegistry: # pylint: disable=function-redefined
         """
         return self.commands[cmd_name]
 
-
 class CommandDispatcher:
     """Handles the execution of all single commands
     
     Parses and executes the text for any command. delegates the details of
     execution to subclasses of CommandExecutor.    
     """
-
-    # all the different tokens that can be used for a multiplier post fix
-    # note that the multiplier postfix is optional note.
-    multiplier_postfixes = ['*', 'times', 'times', 'x', 'X']
 
     def __init__(self, cmd_reg: CommandRegistry):
         """Init
@@ -468,34 +588,6 @@ class CommandDispatcher:
         for _ in range(cmd_mult):
             executor.execute(stt_args=cmd_args)
 
-    def convert_multiplier(self, token: str) -> Optional[int]:
-        """Convert a command multiplier token into the actual number
-                
-        Args:
-            token: the token from the raw command
-        
-        Returns:
-            the converted multiplier, or None if it couldn't be converted
-        """
-
-        # hard-coded conversions from tokens to numbers. Accounts for edge
-        # cases we've seen
-        fixed_conversions = {
-            'to': 2,
-            'two': 2,
-            'three': 3,
-            'for': 4,
-        }
-
-        # first see if it's an integer
-        try:
-            cmd_multiplier = int(token)
-        # if we don't find a number here, then see if it's in the fixed
-        # conversions dictionary
-        except ValueError:
-            cmd_multiplier = fixed_conversions.get(token, None)
-        return cmd_multiplier
-
     def parse(self, command_text: str) -> Tuple[str, int, str]: #pylint: disable=too-many-branches
         """Parse a command text
         
@@ -516,35 +608,19 @@ class CommandDispatcher:
         cmd_multiplier = None
         cmd_args = None
 
-        state = 'command_multiplier_0'
+        # first, let's try parsing the command multiplier at the beginning of the string
+        # tokens_used tells us how many of the tokens were actually in the command multiplier. If there is no multiplier (implicit 1), then tokens used will be zero
+        cmd_multiplier, tokens_used = CommandMultiplierParser.parse_multiplier_string(' '.join(tokens[:2]))
+
+        tokens = tokens[tokens_used:]
+
+        # state machine for parsing the rest of the command name and the args
+        state = 'command_name_0'
         itoken = 0
         while state != 'done' and itoken < len(tokens):
             token = tokens[itoken]
-            # parse the actual number
-            if state == 'command_multiplier_0':
-                # if we find an integer, that's the command multiplier
-                cmd_multiplier = self.convert_multiplier(token)
-                if cmd_multiplier is not None:
-                    state = 'command_multiplier_1'
-                # if we don't find a number here, then it's implicit 1. Proceed
-                # to command name
-                else:
-                    cmd_multiplier = 1
-                    # go back a token because we're actually at the command name now
-                    itoken -= 1
-                    state = 'command_name_0'
-            elif state == 'command_multiplier_1':
-                # if there is a multiplier post fix token, we don't need to
-                # do anything
-                if token in self.multiplier_postfixes:
-                    pass
-                # the multiplier postfix is optional.
-                else:
-                    # go back a token because we're actually at the command name now
-                    itoken -= 1
-                state = 'command_name_0'
             # first word in the command name
-            elif state == 'command_name_0':
+            if state == 'command_name_0':
                 # see if the token is a known first word
                 if token in self.cmd_reg.cmd_name_words(0):
                     cmd_name_list.append(token)

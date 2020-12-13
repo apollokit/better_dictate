@@ -24,6 +24,8 @@
 "death": "def"
 " underscored ": "_"
 "underscored": "_"
+" underscores ": "_"
+"underscores": "_"
 " under score ": "_"
 "under score": "_"
 " underscore ": "_"
@@ -37,6 +39,7 @@
 # note this might get annoying for long-form dictation
 ". ": "."
 " colony": ":"
+"colony": ":"
 # " colon": ":"
 # "colon": ":"
 # "colon": ":"

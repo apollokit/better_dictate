@@ -118,7 +118,7 @@
     case: upper
     in_place: false
 - name: title
-  aliases: ["capital"]
+  aliases: ["capital", "capitol"]
   command_type: case
   kwargs:
     case: title
@@ -187,13 +187,14 @@
 #     - _confluence close braces
 - name: find
   command_type: sublime_find
-  aliases: ["finds"]
+  aliases: ["finds", "search"]
   kwargs:
     # technically, direction is not needed here because that's controlled by my hotkey configuration in sublime. Shrug.
     direction: ["forward"]
     find_hotkey: "ctrl+f"
 - name: reverse
   command_type: sublime_find
+  aliases: ["groomers"]
   kwargs:
     # technically, direction is not needed here because that's controlled by my hotkey configuration in sublime. Shrug.
     direction: ["backward"]
