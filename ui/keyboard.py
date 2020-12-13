@@ -17,7 +17,7 @@ HOTKEY_LETTER = 'Key.esc'
 
 keyboard_ctrlr = Controller()
 
-SLEEP_COUNT = 3
+SLEEP_COUNT = 2
 SLEEP_KEY = 'Key.f2'
 
 # These are all the keys that should *NOT* signal key_pressed_parser_event
