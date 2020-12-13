@@ -75,12 +75,12 @@ class Executor:
             # if the utterance starts with the ISLAND_COMMAND_WORD, it's an
             # "island", or stand-alone command. Dispatch that for execution
             # immediately
-            if first_word == self.ISLAND_COMMAND_WORD:
-                logger.info("Executor: island command")
-                self.cmd_exec.dispatch(' '.join(words[1:]))
+            # if first_word == self.ISLAND_COMMAND_WORD:
+            #     logger.info("Executor: island command")
+            #     self.cmd_exec.dispatch(' '.join(words[1:]))
 
             # not an island, there's mixed stt and (potentially) commands
-            else:
+            if True:
                 idispatch = 0
                 command_words = []
                 # text that we'll format and print out as straight speech to text
