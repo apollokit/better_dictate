@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class DictateParser:
+class Executor:
     ESCAPE_WORD = 'dog'
     ISLAND_COMMAND_WORD = 'dog'
 
@@ -76,7 +76,7 @@ class DictateParser:
             # "island", or stand-alone command. Dispatch that for execution
             # immediately
             if first_word == self.ISLAND_COMMAND_WORD:
-                logger.info("DictateParser: island command")
+                logger.info("Executor: island command")
                 self.cmd_exec.dispatch(' '.join(words[1:]))
 
             # not an island, there's mixed stt and (potentially) commands
@@ -98,17 +98,17 @@ class DictateParser:
                     else:
                         # end of command, need to execute it
                         if in_command:
-                            logger.info("DictateParser: dispatch command ({})".format(idispatch))
+                            logger.info("Executor: dispatch command ({})".format(idispatch))
                             self.cmd_exec.dispatch(' '.join(command_words))
                             # need to have a wait in here, or hot keys from a command can get confused with text to be typed afterwards
                             sleep_time = 0.5
-                            logger.info("DictateParser: sleeping for %f", sleep_time)
+                            logger.info("Executor: sleeping for %f", sleep_time)
                             time.sleep(sleep_time)
                             command_words = []
                             idispatch += 1
                         # we're starting a command, so need to print out the raw text
                         else:
-                            logger.info("DictateParser: dispatch text ({})".format(idispatch))
+                            logger.info("Executor: dispatch text ({})".format(idispatch))
                             self.text_writer.dispatch(' '.join(raw_text_words))
                             raw_text_words = []
                             idispatch += 1
@@ -116,10 +116,10 @@ class DictateParser:
 
                 # handle the end
                 if in_command:
-                    logger.info("DictateParser: dispatch command ({})".format(idispatch))
+                    logger.info("Executor: dispatch command ({})".format(idispatch))
                     self.cmd_exec.dispatch(' '.join(command_words))
                 else:
-                    logger.info("DictateParser: dispatch text ({})".format(idispatch))
+                    logger.info("Executor: dispatch text ({})".format(idispatch))
                     self.text_writer.dispatch(' '.join(raw_text_words))
 
 
@@ -129,9 +129,9 @@ class DictateParser:
             self._cmd_reg_lock.release()
         
 
-parser_inst = DictateParser()
+executor_inst = Executor()
 
-def parser_thread(raw_stt_output_q: Queue):
+def executor_thread(raw_stt_output_q: Queue):
     """ Execution thread for parsing and acting output from inference
     
     Args:
@@ -150,7 +150,7 @@ def parser_thread(raw_stt_output_q: Queue):
             logger.debug("Got: '{}'".format(raw_utterance))
             
             try:
-                parser_inst.parse_and_execute(raw_utterance)
+                executor_inst.parse_and_execute(raw_utterance)
             except Exception as e:
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 traceback.print_exception(exc_type, exc_value, exc_traceback)
@@ -169,7 +169,7 @@ def parser_thread(raw_stt_output_q: Queue):
 #     logging.basicConfig(format=form,
 #                         datefmt="%H:%M:%S")
 
-#     parser_inst.saw_user_action = False
+#     executor_inst.saw_user_action = False
 #     raw_utterance = "hey there i've got dog test"
 #     time.sleep(2)
-#     parser_inst.parse_and_execute(raw_utterance)
+#     executor_inst.parse_and_execute(raw_utterance)

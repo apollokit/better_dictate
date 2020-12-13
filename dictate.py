@@ -12,7 +12,7 @@ from ui.app_indicator import app_indicator_thread, gtk_main_thread
 from ui.keyboard import keyb_listener
 from ui.mouse import mouse_listener
 from backend.manager import app_mngr
-from backend.parser import parser_thread
+from backend.executor import executor_thread
 from backend.webspeech import webspeech_thread
 
 WEBSPEECH_HOST='localhost'
@@ -63,7 +63,7 @@ def go(
             WEBSPEECH_HOST,
             WEBSPEECH_PORT))
         futures.append(executor.submit(
-            parser_thread,
+            executor_thread,
             raw_stt_output_q))
         futures.append(executor.submit(
             app_indicator_thread))

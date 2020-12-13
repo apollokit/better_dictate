@@ -13,7 +13,7 @@ gi.require_version('AppIndicator3', '0.1')
 from gi.repository import Gtk as gtk, AppIndicator3 as appindicator
 
 from backend.manager import app_mngr
-from backend.parser import parser_inst
+from backend.executor import executor_inst
 #pylint: enable=wrong-import-position
 
 abs_file_dir = path.dirname(path.abspath(__file__))
@@ -36,7 +36,7 @@ def do_quit(_):
 def reload_commands(_):
     """Reload commands into the dictate parser
     """
-    parser_inst.reload_commands()
+    executor_inst.reload_commands()
 
 ## Setup menu and app indicator
 
