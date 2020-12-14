@@ -9,16 +9,17 @@ from queue import Queue, Empty
 import sys
 import time
 import traceback
-from typing import Dict
-
-from pynput.keyboard import Controller
+from typing import Dict, List
 
 from backend.commands import CommandDispatcher, CommandRegistry
 from backend.manager import app_mngr, event_mngr
 from backend.text import TextWriter
+from backend.actions import Action, ActionHistory
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+
 
 
 class Executor:
@@ -34,12 +35,20 @@ class Executor:
         with open(self.commands_file, 'r') as f:
             commands_def = yaml.load(f, Loader=yaml.FullLoader)
         self.cmd_reg = CommandRegistry(commands_def)
-        self.cmd_exec = CommandDispatcher(self.cmd_reg)
+        
+        # the history of actions taken
+        self.history = ActionHistory() 
+        
+        # make a command dispatcher.need to pass history to it because
+        # there are commands that do stuff with that history
+        self.cmd_exec = CommandDispatcher(self.cmd_reg, self.history)
+        
         # lock to prevent updating the command registry in the middle of parsing
         self._cmd_reg_lock = threading.Lock()
 
-        ## create the text writer
+        # create the text writer
         self.text_writer = TextWriter()
+
 
 
     def reload_commands(self):
@@ -71,6 +80,9 @@ class Executor:
         
         self._cmd_reg_lock.acquire()
 
+        # the actions for this utterance
+        actions: List[Action] = []
+
         try:
             # if the utterance starts with the ISLAND_COMMAND_WORD, it's an
             # "island", or stand-alone command. Dispatch that for execution
@@ -99,7 +111,8 @@ class Executor:
                         # end of command, need to execute it
                         if in_command:
                             logger.info("Executor: dispatch command ({})".format(idispatch))
-                            self.cmd_exec.dispatch(' '.join(command_words))
+                            actions += self.cmd_exec.dispatch(
+                                ' '.join(command_words))
                             # need to have a wait in here, or hot keys from a command can get confused with text to be typed afterwards
                             sleep_time = 0.5
                             logger.info("Executor: sleeping for %f", sleep_time)
@@ -109,7 +122,8 @@ class Executor:
                         # we're starting a command, so need to print out the raw text
                         else:
                             logger.info("Executor: dispatch text ({})".format(idispatch))
-                            self.text_writer.dispatch(' '.join(raw_text_words))
+                            actions.append(self.text_writer.dispatch(
+                                ' '.join(raw_text_words)))
                             raw_text_words = []
                             idispatch += 1
                         in_command = not in_command
@@ -117,11 +131,14 @@ class Executor:
                 # handle the end
                 if in_command:
                     logger.info("Executor: dispatch command ({})".format(idispatch))
-                    self.cmd_exec.dispatch(' '.join(command_words))
+                    actions += self.cmd_exec.dispatch(
+                        ' '.join(command_words))
                 else:
                     logger.info("Executor: dispatch text ({})".format(idispatch))
-                    self.text_writer.dispatch(' '.join(raw_text_words))
+                    actions.append(self.text_writer.dispatch(
+                        ' '.join(raw_text_words)))
 
+            self.history.add_utterance_actions(actions)
 
         # No except here, so any exceptions pass up the stack 
 

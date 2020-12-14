@@ -187,7 +187,7 @@
 #     - _confluence close braces
 - name: find
   command_type: sublime_find
-  aliases: ["finds", "search"]
+  aliases: ["finds", "search", "searched"]
   kwargs:
     # technically, direction is not needed here because that's controlled by my hotkey configuration in sublime. Shrug.
     direction: ["forward"]
@@ -199,3 +199,6 @@
     # technically, direction is not needed here because that's controlled by my hotkey configuration in sublime. Shrug.
     direction: ["backward"]
     find_hotkey: "ctrl+."
+- name: undo last
+  command_type: undo_utterance
+  kwargs: {}
