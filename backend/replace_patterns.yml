@@ -63,3 +63,11 @@
 "deaf ": "def "
 "back-end": backend
 "back end": backend
+" – ": "-" 
+"–": "-"
+" - ": "-"
+" donkey ": "-"
+" double hash pipe": "##"
+"double hash pipe": "##"
+" hash pipe": "#"
+"hash pipe": "#"

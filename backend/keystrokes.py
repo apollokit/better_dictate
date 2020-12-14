@@ -22,7 +22,9 @@ SPECIAL_OPERAND_KEYS = {
     'up': Key.up,
     'right': Key.right,
     'down': Key.down,
-    'enter': Key.enter
+    'enter': Key.enter,
+    'page_down': Key.page_down,
+    'page_up': Key.page_up,
 }
 
 def parse_hotkey(

@@ -18,10 +18,19 @@
   command_type: keystroke
   kwargs:
     keys: ["super+tab"]
+- name: page down
+  command_type: keystroke
+  kwargs:
+    keys: ["page_down"]
+- name: page up
+  command_type: keystroke
+  kwargs:
+    keys: ["page_up"]
 - name: pasta
   command_type: keystroke
   kwargs:
     keys: ["ctrl+v"]
+    prepend_whitespace_when_embedded: true
     # undo_keys: ["ctrl+z"]
 - name: blue
   command_type: keystroke
@@ -202,3 +211,8 @@
 - name: undo last
   command_type: undo_utterance
   kwargs: {}
+- name: my email address
+  aliases: ["my email"]
+  command_type: type
+  kwargs:
+    content: "kitkennedy8@gmail.com"

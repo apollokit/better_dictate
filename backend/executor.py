@@ -9,7 +9,7 @@ from queue import Queue, Empty
 import sys
 import time
 import traceback
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from backend.commands import CommandDispatcher, CommandRegistry
 from backend.manager import app_mngr, event_mngr
@@ -83,6 +83,13 @@ class Executor:
         # the actions for this utterance
         actions: List[Action] = []
 
+        # for passing arbitrary state to individual command execution
+        # pretty bespoke, but *shrug*
+        cmd_execution_state: Dict[str, Any] = {
+            # command is executed after pure dictation text writing
+            "embedded_command": False
+        }
+
         try:
             # if the utterance starts with the ISLAND_COMMAND_WORD, it's an
             # "island", or stand-alone command. Dispatch that for execution
@@ -111,8 +118,9 @@ class Executor:
                         # end of command, need to execute it
                         if in_command:
                             logger.info("Executor: dispatch command ({})".format(idispatch))
+                            print(cmd_execution_state['embedded_command'])
                             actions += self.cmd_exec.dispatch(
-                                ' '.join(command_words))
+                                ' '.join(command_words), cmd_execution_state)
                             # need to have a wait in here, or hot keys from a command can get confused with text to be typed afterwards
                             sleep_time = 0.5
                             logger.info("Executor: sleeping for %f", sleep_time)
@@ -120,19 +128,21 @@ class Executor:
                             command_words = []
                             idispatch += 1
                         # we're starting a command, so need to print out the raw text
-                        else:
+                        elif len(raw_text_words) > 0:
                             logger.info("Executor: dispatch text ({})".format(idispatch))
                             actions.append(self.text_writer.dispatch(
                                 ' '.join(raw_text_words)))
+                            cmd_execution_state['embedded_command'] = True
                             raw_text_words = []
                             idispatch += 1
                         in_command = not in_command
 
                 # handle the end
                 if in_command:
+                    print(cmd_execution_state['embedded_command'])
                     logger.info("Executor: dispatch command ({})".format(idispatch))
                     actions += self.cmd_exec.dispatch(
-                        ' '.join(command_words))
+                        ' '.join(command_words), cmd_execution_state)
                 else:
                     logger.info("Executor: dispatch text ({})".format(idispatch))
                     actions.append(self.text_writer.dispatch(

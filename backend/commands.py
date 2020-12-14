@@ -152,14 +152,19 @@ class CommandExecutor(Action):
 
     def execute(self, 
             action_history: ActionHistory, 
-            stt_args: Optional[str] = None):
+            cmd_execution_state: Dict[str, Any],
+            stt_args: Optional[str] = None,):
         """Execute the command, with given arguments
         
         should be overridden in subclasses
 
         Args:
-            action_history:  the history of actions executed. Used by some commands
-            stt_args: string of additional arguments received for an individual command
+            action_history:  the history of actions executed. Used by some 
+                commands
+            stt_args: string of additional arguments received for an 
+                individual command
+            cmd_execution_state: dictionary of bespoke state to pass to     
+                command executors
 
         Returns:
             an action for action history
@@ -198,7 +203,9 @@ class KeystrokeCmdExec(CommandExecutor):
             Example: ['ctrl-c','delay 0.25','alt-v','tab','enter']
     """
 
-    def __init__(self, cmd_reg: CommandRegistry, keys: List[str]):
+    def __init__(self, cmd_reg: CommandRegistry, 
+            keys: List[str],
+            prepend_whitespace_when_embedded: bool = False):
         """Init
                 
         Args:
@@ -208,9 +215,12 @@ class KeystrokeCmdExec(CommandExecutor):
         self.keys = keys
         self._keyboard_ctlr = keyboard_controller
         self.hotkey_separator = HOTKEY_SEPARATOR
-        
+
+        self.prepend_whitespace = prepend_whitespace_when_embedded
+
     def execute(self, 
             action_history: ActionHistory, 
+            cmd_execution_state: Dict[str, Any],
             stt_args: Optional[str] = None):
         """Execute command
 
@@ -219,12 +229,20 @@ class KeystrokeCmdExec(CommandExecutor):
         
         Args:
             action_history: see superclass
+            cmd_execution_state: see superclass
             stt_args: see superclass
         """
         logger.debug("KeystrokeCmdExec: typing keys: '{}'".format(self.keys))
+        
+        embedded_command = cmd_execution_state['embedded_command']
 
         # there should be no speech to text arguments for keystroke command
         assert stt_args is None
+
+        # type a space if desired
+        if self.prepend_whitespace and embedded_command:
+            self._keyboard_ctlr.tap(Key.space)
+
         for hotkey in self.keys:
             # deal with delay
             if hotkey.startswith('delay'):
@@ -252,7 +270,10 @@ class TypeCmdExec(CommandExecutor):
         'content': the string content to type, e.g. "I'm a string"
     """
 
-    def __init__(self, cmd_reg: CommandRegistry, content: List[str]):
+    def __init__(self, cmd_reg: CommandRegistry, 
+            content: List[str],
+            prepend_whitespace_when_embedded: bool = True
+            ):
         """Init
         
         Args:
@@ -261,20 +282,30 @@ class TypeCmdExec(CommandExecutor):
         super().__init__(cmd_reg)
         self.text = content
         self._keyboard_ctlr = keyboard_controller
+
+        self.prepend_whitespace = prepend_whitespace_when_embedded
         
     def execute(self, 
             action_history: ActionHistory, 
+            cmd_execution_state: Dict[str, Any],
             stt_args: Optional[str] = None):
         """Execute command
         
         Args:
             action_history: see superclass
+            cmd_execution_state: see superclass
             stt_args: see superclass
         """
+        embedded_command = cmd_execution_state['embedded_command']
+
+        if self.prepend_whitespace and embedded_command:
+            self.text = ' ' + self.text
+
         logger.debug("TypeCmdExec: typing: '{}'".format(self.text))
 
         # there should be no speech to text arguments for keystroke command
         assert stt_args is None
+
         self._keyboard_ctlr.type(self.text)
 
     def undo(self) -> bool:
@@ -318,7 +349,11 @@ class CaseCmdExec(CommandExecutor):
         'pascal'
     ]
 
-    def __init__(self, cmd_reg: CommandRegistry, case: str, in_place: bool):
+    def __init__(self, cmd_reg: CommandRegistry, 
+            case: str, 
+            in_place: bool,
+            prepend_whitespace_when_embedded: bool = True
+            ):
         """Init
         
         Args:
@@ -336,24 +371,28 @@ class CaseCmdExec(CommandExecutor):
         self._keyboard_ctlr = keyboard_controller
 
         # whether or not to prepend and append a white space before / after the formatted text
-        self.prepend_whitespace = False
-        self.append_whitespace = False
+        self.prepend_whitespace = prepend_whitespace_when_embedded
+        # self.append_whitespace = False
         
     def execute(self, 
             action_history: ActionHistory, 
+            cmd_execution_state: Dict[str, Any],
             stt_args: Optional[str] = None):
         """Execute command
         
         Args:
             action_history: see superclass
+            cmd_execution_state: see superclass
             stt_args: see superclass
         """
+        embedded_command = cmd_execution_state['embedded_command']
+
         if not self.in_place:
             the_text = CaseCmdExec.format_case(stt_args, self.case)
-            if self.prepend_whitespace:
+            if self.prepend_whitespace and embedded_command:
                 the_text = ' ' + the_text
-            if self.append_whitespace:
-                the_text = the_text + ' '
+            # if self.append_whitespace:
+            #     the_text = the_text + ' '
             logger.debug("CaseCmdExec: typing: '{}'".format(the_text))
             self.text = the_text
             self._keyboard_ctlr.type(the_text)
@@ -432,11 +471,13 @@ class SublimeFindCmdExec(CommandExecutor):
 
     def execute(self, 
             action_history: ActionHistory, 
+            cmd_execution_state: Dict[str, Any],
             stt_args: Optional[str] = None):
         """Execute command
         
         Args:
             action_history: see superclass
+            cmd_execution_state: see superclass
             stt_args: see superclass
         """
 
@@ -504,11 +545,13 @@ class UndoUtteranceCmdExec(CommandExecutor):
 
     def execute(self, 
             action_history: ActionHistory, 
+            cmd_execution_state: Dict[str, Any],
             stt_args: Optional[str] = None):
         """Execute command
         
         Args:
             action_history: see superclass
+            cmd_execution_state: see superclass
             stt_args: see superclass
         """
 
@@ -555,11 +598,13 @@ class ChainCommandExec(CommandExecutor):
 
     def execute(self, 
             action_history: ActionHistory, 
+            cmd_execution_state: Dict[str, Any],
             stt_args: Optional[str] = None):
         """Execute command
         
         Args:
             action_history: see superclass
+            cmd_execution_state: see superclass
             stt_args: see superclass
 
         Returns:
@@ -573,7 +618,8 @@ class ChainCommandExec(CommandExecutor):
             executor = self.cmd_reg.get_command_executor(cmd_name)
             # cmd_def_kwargs = self.cmd_reg.get_command_def_kwargs(cmd_name)
             self.executed_actions.append(
-                executor.execute(action_history, stt_args=None))
+                executor.execute(action_history, 
+                    cmd_execution_state, stt_args=None))
 
     def undo(self) -> bool:
         """Undo
@@ -731,12 +777,15 @@ class CommandDispatcher:
         self.cmd_reg = cmd_reg
         self.action_history = action_history
 
-    def dispatch(self, command_text: str) -> List[Action]:
+    def dispatch(self, command_text: str, 
+            cmd_execution_state: Dict[str, Any]) -> List[Action]:
         """Dispatch a given raw command text for execution
                 
         Args:
             command_text: the raw string command text, as output by the
                 speech-to-text engine
+            cmd_execution_state: dictionary of bespoke state to pass to     
+                command executors
 
         Returns:
             the actions taken
@@ -751,7 +800,10 @@ class CommandDispatcher:
         # execute cmd_mult times
         actions = []
         for _ in range(cmd_mult):
-            executor.execute(self.action_history, stt_args=cmd_args)
+            executor.execute(self.action_history, 
+                cmd_execution_state=cmd_execution_state,
+                stt_args=cmd_args
+                )
             # here, the executor IS the action
             actions.append(executor)
         return actions
