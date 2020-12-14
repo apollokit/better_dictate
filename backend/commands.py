@@ -349,7 +349,8 @@ class CaseCmdExec(CommandExecutor):
         'snake', 
         'screaming snake', 
         'camel',
-        'pascal'
+        'pascal',
+        'lower letters'
     ]
 
     def __init__(self, cmd_reg: CommandRegistry, 
@@ -447,6 +448,9 @@ class CaseCmdExec(CommandExecutor):
         elif case == 'acronym':
             first_letters = [token[0].upper() for token in tokens]
             return ''.join(first_letters)
+        elif case == 'lower letters':
+            first_letters = [token[0] for token in tokens]
+            return ''.join(first_letters)
         else:
             raise NotImplementedError
 
@@ -510,6 +514,9 @@ class SublimeFindCmdExec(CommandExecutor):
         # enter the find dialog in sublime text
         execute_modified_keystroke(self._keyboard_ctlr, self.find_hotkey, self.hotkey_separator)
         
+        #throw in a sleep, because if I try to use this in the browser not all the content gets captured
+        time.sleep(0.2)
+
         # type the search string
         self._keyboard_ctlr.type(content)
         
@@ -617,9 +624,14 @@ class ChainCommandExec(CommandExecutor):
         # there should be no speech to text arguments for chain command
         assert stt_args is None
         
-        for cmd_name in self.commands:
+        for icommand, cmd_name in enumerate(self.commands):
             executor = self.cmd_reg.get_command_executor(cmd_name)
             # cmd_def_kwargs = self.cmd_reg.get_command_def_kwargs(cmd_name)
+            
+            # if we are in a chain, this should only be true for the first one
+            if icommand > 0:
+                cmd_execution_state['embedded_command'] = False
+
             self.executed_actions.append(
                 executor.execute(action_history, 
                     cmd_execution_state, stt_args=None))
@@ -803,7 +815,8 @@ class CommandDispatcher:
         actions = []
 
         for icommand, command in enumerate(commands):
-            logger.debug("Command {}: '{}'".format(icommand, command))
+            logger.debug("  Command {}: '{}'".format(icommand, command))
+            logger.debug("  embedded_command: {}".format(cmd_execution_state['embedded_command']))
 
             cmd_name, cmd_mult, cmd_args = self.parse(command)
             

@@ -148,6 +148,12 @@
   kwargs:
     case: acronym
     in_place: false
+- name: letters
+  aliases: ["lower letters"]
+  command_type: case
+  kwargs:
+    case: lower letters
+    in_place: false
 - name: pascal
   command_type: case
   kwargs:
@@ -168,6 +174,7 @@
     keys:
     - "{"
     - "{"
+    prepend_whitespace_when_embedded: true
 - name: _confluence close braces
   command_type: keystroke
   comment: Type close braces for code formatting within confluence

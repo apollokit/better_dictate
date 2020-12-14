@@ -1,4 +1,12 @@
 # Note that these will be applied in order, so if two transformations conflict with each other, put the preferable one first
+" – ": "-" 
+"–": "-"
+" - ": "-"
+"- ": "-"
+" donkey donkey ": "--"
+"donkey donkey ": "--"
+" donkey ": "-"
+"donkey ": "-"
 " i ": " I "
 "i've": "I've"
 "quotes": "\""
@@ -34,6 +42,10 @@
 "spacebar ": " "
 " spacebar": " "
 "spacebar": " "
+" space bar ": " "
+"space bar ": " "
+" space bar": " "
+"space bar": " "
 # stuff with dot
 ". pie": ".py"
 # note this might get annoying for long-form dictation
@@ -63,10 +75,6 @@
 "deaf ": "def "
 "back-end": backend
 "back end": backend
-" – ": "-" 
-"–": "-"
-" - ": "-"
-" donkey ": "-"
 " double hash pipe": "##"
 "double hash pipe": "##"
 " hash pipe": "#"
