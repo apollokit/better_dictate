@@ -143,7 +143,7 @@
     case: camel
     in_place: false
 - name: acronym
-  aliases: ["upper letters"]
+  aliases: ["phonetic"]
   command_type: case
   kwargs:
     case: acronym
@@ -153,6 +153,18 @@
   command_type: case
   kwargs:
     case: lower letters
+    in_place: false
+- name: upper letters
+  aliases: ["upper letters"]
+  command_type: case
+  kwargs:
+    case: upper letters
+    in_place: false
+- name: name
+  aliases: ["named", "name letters"]
+  command_type: case
+  kwargs:
+    case: name letters
     in_place: false
 - name: pascal
   command_type: case

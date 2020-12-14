@@ -350,7 +350,9 @@ class CaseCmdExec(CommandExecutor):
         'screaming snake', 
         'camel',
         'pascal',
-        'lower letters'
+        'lower letters',
+        'upper letters'
+        'name letters'
     ]
 
     def __init__(self, cmd_reg: CommandRegistry, 
@@ -430,27 +432,69 @@ class CaseCmdExec(CommandExecutor):
             the formatted string
         """
         tokens = text.split()
+        # the raw tokens look like: 'bay laugh anguish hannover'
+        # returns 'BAY LAUGH ANGUISH HANNOVER'
         if case == 'upper':
             return ' '.join([token.upper() for token in tokens])
+        
+        # the raw tokens look like: 'bay laugh anguish hannover'
+        # returns 'bay laugh anguish hannover'
         elif case == 'lower':
             return ' '.join([token.lower() for token in tokens])
+        
+        # the raw tokens look like: 'bay laugh anguish hannover'
+        # returns 'Bay Laugh Anguish Hannover'
         elif case == 'title':
             return ' '.join([token.capitalize() for token in tokens])
+        
+        # the raw tokens look like: 'bay laugh anguish hannover'
+        # returns 'BayLaughAnguishHannover'
         elif case == 'pascal':
             return ''.join([token.capitalize() for token in tokens])
+        
+        # the raw tokens look like: 'bay laugh anguish hannover'
+        # returns 'bay_laugh_anguish_hannover'
         elif case == 'snake':
             return '_'.join(tokens)
+        
+        # the raw tokens look like: 'bay laugh anguish hannover'
+        # returns 'BAY_LAUGH_ANGUISH_HANNOVER'
         elif case == 'screaming snake':
             return '_'.join([token.upper() for token in tokens])
+        
+        # the raw tokens look like: 'bay laugh anguish hannover'
+        # returns 'bayLaughAnguishHannover'
         elif case == 'camel':
             return ''.join(
                 [tokens[0].lower()] + [token.capitalize() for token in tokens[1:]])
+
+        # the raw tokens look like: 'bay laugh anguish hannover'
+        # returns 'BLAH'
         elif case == 'acronym':
             first_letters = [token[0].upper() for token in tokens]
             return ''.join(first_letters)
+        
+        # the raw tokens look like: 'blah' or 'b l a h'
+        # returns 'blah'
         elif case == 'lower letters':
-            first_letters = [token[0] for token in tokens]
-            return ''.join(first_letters)
+            joined = ''.join(tokens)
+            joined = joined.replace(' ','')
+            return joined.lower()
+        
+        # the raw tokens look like: 'blah' or 'b l a h'
+        # returns 'BLAH'
+        elif case == 'upper letters':
+            joined = ''.join(tokens)
+            joined = joined.replace(' ','')
+            return joined.upper()
+        
+        # the raw tokens look like: 'blah' or 'b l a h'
+        # returns 'Blah'
+        elif case == 'name letters':
+            joined = ''.join(tokens)
+            joined = joined.replace(' ','')
+            return joined.capitalize()
+            
         else:
             raise NotImplementedError
 

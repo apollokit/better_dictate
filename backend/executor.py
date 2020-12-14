@@ -118,7 +118,6 @@ class Executor:
                         # end of command, need to execute it
                         if in_command:
                             logger.info("Executor: dispatch command ({})".format(idispatch))
-                            print(cmd_execution_state['embedded_command'])
                             actions += self.cmd_exec.dispatch(
                                 ' '.join(command_words), cmd_execution_state)
                             # need to have a wait in here, or hot keys from a command can get confused with text to be typed afterwards
@@ -139,7 +138,6 @@ class Executor:
 
                 # handle the end
                 if in_command:
-                    print(cmd_execution_state['embedded_command'])
                     logger.info("Executor: dispatch command ({})".format(idispatch))
                     actions += self.cmd_exec.dispatch(
                         ' '.join(command_words), cmd_execution_state)
