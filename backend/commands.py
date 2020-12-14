@@ -18,6 +18,9 @@ logger.setLevel(logging.DEBUG)
 # the separator used between separate keys within a hotkey, e.g. 'ctrl+a'
 HOTKEY_SEPARATOR = '+'
 
+# use , to delimit multiple commands
+MULTIPLE_COMMAND_DELIMITER = ', '
+
 # a single controller for all command executors
 keyboard_controller = Controller()
 
@@ -777,12 +780,12 @@ class CommandDispatcher:
         self.cmd_reg = cmd_reg
         self.action_history = action_history
 
-    def dispatch(self, command_text: str, 
+    def dispatch(self, raw_command_text: str, 
             cmd_execution_state: Dict[str, Any]) -> List[Action]:
         """Dispatch a given raw command text for execution
                 
         Args:
-            command_text: the raw string command text, as output by the
+            raw_command_text: the raw string command text, as output by the
                 speech-to-text engine
             cmd_execution_state: dictionary of bespoke state to pass to     
                 command executors
@@ -790,22 +793,31 @@ class CommandDispatcher:
         Returns:
             the actions taken
         """
-        
-        logger.debug("Raw command: '{}'".format(command_text))
 
-        cmd_name, cmd_mult, cmd_args = self.parse(command_text)
+        logger.debug("Raw command: '{}'".format(raw_command_text))
         
-        executor = self.cmd_reg.get_command_executor(cmd_name)
+        # if there are multiple commands, we should split them out
+        commands = raw_command_text.split(MULTIPLE_COMMAND_DELIMITER)
         
-        # execute cmd_mult times
+        # the actions taken by the commands
         actions = []
-        for _ in range(cmd_mult):
-            executor.execute(self.action_history, 
-                cmd_execution_state=cmd_execution_state,
-                stt_args=cmd_args
-                )
-            # here, the executor IS the action
-            actions.append(executor)
+
+        for icommand, command in enumerate(commands):
+            logger.debug("Command {}: '{}'".format(icommand, command))
+
+            cmd_name, cmd_mult, cmd_args = self.parse(command)
+            
+            executor = self.cmd_reg.get_command_executor(cmd_name)
+            
+            # execute cmd_mult times
+            for _ in range(cmd_mult):
+                executor.execute(self.action_history, 
+                    cmd_execution_state=cmd_execution_state,
+                    stt_args=cmd_args
+                    )
+                # here, the executor IS the action
+                actions.append(executor)
+        
         return actions
 
     def parse(self, command_text: str) -> Tuple[str, int, str]: #pylint: disable=too-many-branches
