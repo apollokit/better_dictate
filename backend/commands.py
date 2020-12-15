@@ -494,7 +494,7 @@ class CaseCmdExec(CommandExecutor):
             joined = ''.join(tokens)
             joined = joined.replace(' ','')
             return joined.capitalize()
-            
+
         else:
             raise NotImplementedError
 
@@ -726,10 +726,17 @@ class CommandRegistry: # pylint: disable=function-redefined
         # mapping from a command name to the executor instance for it
         self.commands: Dict[str, CommandExecutor] = {}
 
-        # internal caches of the first words of a command name, second words etc
-        self._first_words = None
-        self._second_words = None
-        self._third_words = None
+        # tree of nested dicts encoding a lookup table for command name tokens, like:
+        # first word      second word      third word
+        # do          ->  my           ->  homework
+        #                              ->  chores
+        #             ->  his          ->  makeup
+        # watch       ->  tv           ->  (none)
+        #             ->  netflix      ->  tonight
+        #
+        # note this tree is kinda memory heavy, but whatevs. We only need one, and lookup is fast for Dicts
+        # real life test: for 42 commands this took up 2272 bytes
+        self._cmd_token_tree = {}
 
         self.update_commands(commands_def)
 
@@ -741,9 +748,6 @@ class CommandRegistry: # pylint: disable=function-redefined
         """
         # clear all these first
         self.commands = {}
-        self._first_words = None
-        self._second_words = None
-        self._third_words = None
 
         for icommand, command_def in enumerate(commands_def):
             kwargs = command_def['kwargs']
@@ -754,7 +758,7 @@ class CommandRegistry: # pylint: disable=function-redefined
                     self.command_types[command_def['command_type']](
                         self, **kwargs)
 
-        self._set_cmd_name_words()
+        self._build_cmd_token_tree()
 
     @property
     def cmd_names(self) -> List[str]:
@@ -765,12 +769,13 @@ class CommandRegistry: # pylint: disable=function-redefined
         """
         return list(self.commands.keys())
 
-    def _set_cmd_name_words(self):
-        """Set internal caches of command words
-        """
-        self._first_words = []
-        self._second_words = []
-        self._third_words = []
+    def _build_cmd_token_tree(self):
+        """Build internal look up table of command words
+        """        
+
+        # reset it
+        self._cmd_token_tree = {}
+
         for cmd_name in self.cmd_names:
             words = cmd_name.split()
             first_word = words[0]
@@ -778,34 +783,46 @@ class CommandRegistry: # pylint: disable=function-redefined
             cmd_name_invalid = CommandMultiplierParser.check_valid_multiplier_token(first_word)
             if cmd_name_invalid:
                 raise ValueError(f'Token "{first_word}" is not a valid beginning of a command name. It could be interpreted as a command multiplier')
-            self._first_words.append(first_word)
+            
+            # todo: add support for more than 3 levels?
+            current_level = self._cmd_token_tree
+            current_level.setdefault(words[0], {})
+            current_level = self._cmd_token_tree[words[0]]
             if len(words) > 1:
-                self._second_words.append(words[1])
+                current_level.setdefault(words[1], {})
+                current_level = current_level[words[1]]
             if len(words) > 2:
-                self._third_words.append(words[2])
+                # IT ENDS HERE!
+                current_level.setdefault(words[2], {})
             if len(words) > 3:
                 raise NotImplementedError
 
-    def cmd_name_words(self, indx: int = 0) -> List[str]:
-        """Get the words in the first, second, etc position in all command
-        names
+    def cmd_name_next_tokens(self, tokens_so_far: List[str]) -> List[str]:
+        """Get the available tokens in the next slot for a command name
 
 
         Args:
-            indx: the position in the command name. 0 is the first word, one is
-                the second word, etc (default: {0})
+            tokens_so_far: list of tokens that have been parsed from the 
+                command name thus far. Eg, if the command name is "do my
+                homework", then ['do'] would return ['my'] (and
+                additional tokens, if other commands start with 'do')
         
         Returns:
-            list of words at given position in command name
+            list of next available words for valid command names
         """
-        if indx == 0:
-            return self._first_words
-        elif indx == 1:
-            return self._second_words
-        elif indx == 2:
-            return self._third_words
-        else:
-            raise NotImplementedError
+
+        current_level = self._cmd_token_tree
+        next_tokens = current_level.keys()
+        for token in tokens_so_far:
+            try:
+                current_level = current_level[token]
+                next_tokens = current_level.keys()
+            except KeyError:
+                #pylint: disable=raise-missing-from
+                raise ValueError(
+                    f'No command found with tokens {tokens_so_far}')
+                #pylint: enable=raise-missing-from
+        return list(next_tokens)
 
     def get_command_executor(self, cmd_name: str) -> CommandExecutor:
         """Get the executor instance for a given command name
@@ -859,10 +876,11 @@ class CommandDispatcher:
         actions = []
 
         for icommand, command in enumerate(commands):
-            logger.debug("  Command {}: '{}'".format(icommand, command))
-            logger.debug("  embedded_command: {}".format(cmd_execution_state['embedded_command']))
-
             cmd_name, cmd_mult, cmd_args = self.parse(command)
+            
+            logger.debug("  Raw command {}: '{}'".format(icommand, command))
+            logger.debug("  Command name: '{}'".format(cmd_name))
+            logger.debug("  embedded_command: {}".format(cmd_execution_state['embedded_command']))
             
             executor = self.cmd_reg.get_command_executor(cmd_name)
             
@@ -893,7 +911,7 @@ class CommandDispatcher:
         tokens = command_text.split(' ')
 
         # extracted command characteristics
-        cmd_name_list = []
+        cmd_name_tokens = []
         cmd_multiplier = None
         cmd_args = None
 
@@ -911,8 +929,8 @@ class CommandDispatcher:
             # first word in the command name
             if state == 'command_name_0':
                 # see if the token is a known first word
-                if token in self.cmd_reg.cmd_name_words(0):
-                    cmd_name_list.append(token)
+                if token in self.cmd_reg.cmd_name_next_tokens(cmd_name_tokens):
+                    cmd_name_tokens.append(token)
                     state = 'command_name_1'
                 # there must be at least one expected word for it to be a real
                 # command
@@ -921,8 +939,8 @@ class CommandDispatcher:
             # second word in the command name (optional)
             elif state == 'command_name_1':
                 # see if the token is a known second word
-                if token in self.cmd_reg.cmd_name_words(1):
-                    cmd_name_list.append(token)
+                if token in self.cmd_reg.cmd_name_next_tokens(cmd_name_tokens):
+                    cmd_name_tokens.append(token)
                     state = 'command_name_2'
                 # if there is no second word, we're in the command args now
                 else:
@@ -932,8 +950,8 @@ class CommandDispatcher:
             # third word in the command name (optional)
             elif state == 'command_name_2':
                 # see if the token is a known third word
-                if token in self.cmd_reg.cmd_name_words(2):
-                    cmd_name_list.append(token)
+                if token in self.cmd_reg.cmd_name_next_tokens(cmd_name_tokens):
+                    cmd_name_tokens.append(token)
                     state = 'args'
                 # if there is no third word, we're in the command args
                 else:
@@ -950,7 +968,7 @@ class CommandDispatcher:
             itoken += 1
 
         # it should be a known command
-        cmd_name = ' '.join(cmd_name_list)
+        cmd_name = ' '.join(cmd_name_tokens)
         assert cmd_name in self.cmd_reg.cmd_names
         
         if cmd_args:
