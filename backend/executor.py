@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-
+STOP_SUBSTRING = 'stop stop'
 
 class Executor:
     ESCAPE_WORD = 'dog'
@@ -74,6 +74,10 @@ class Executor:
         text = raw_utterance
         text = text.lower()
         text = text.strip()
+
+        if STOP_SUBSTRING in text:
+            logger.info("Saw stop substring, not doing anything")
+            return
 
         words = text.split()
         first_word = words[0]
