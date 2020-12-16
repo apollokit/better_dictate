@@ -26,6 +26,16 @@
   command_type: keystroke
   kwargs:
     keys: ["page_up"]
+- name: down
+  command_type: keystroke
+  description: press the down button
+  kwargs:
+    keys: ["down"]
+- name: up
+  command_type: keystroke
+  description: press the up button
+  kwargs:
+    keys: ["up"]
 - name: scroll down
   command_type: keystroke
   description: press the down button 15 times

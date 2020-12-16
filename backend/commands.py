@@ -44,6 +44,7 @@ class CommandMultiplierParser:
         'triple': 3,
         'for': 4,
         'quadruple': 4,
+        'five': 5,
     }
 
     @staticmethod
