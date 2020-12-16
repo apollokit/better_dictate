@@ -26,10 +26,21 @@
   command_type: keystroke
   kwargs:
     keys: ["page_up"]
+- name: scroll down
+  command_type: keystroke
+  description: press the down button 15 times
+  kwargs:
+    keys: ["down","down","down","down","down","down","down","down","down","down","down","down","down","down","down"]
+- name: scroll up
+  command_type: keystroke
+  description: press the up button 15 times
+  kwargs:
+    keys: ["up","up","up","up","up","up","up","up","up","up","up","up","up","up","up"]
 - name: pasta
   command_type: keystroke
+  description: Paste code in current window. Use ctrl shift v for compatibility
   kwargs:
-    keys: ["ctrl+v"]
+    keys: ["ctrl+shift+v"]
     prepend_whitespace_when_embedded: true
     # undo_keys: ["ctrl+z"]
 - name: blue
@@ -197,7 +208,7 @@
     - "}"
 - name: code pasta
   command_type: chain
-  aliases: ["coat pasta"]
+  aliases: ["coat pasta", "cooked pasta"]
   description: Paste code with proper formatting for current app
   kwargs:
     commands:
@@ -235,3 +246,8 @@
   command_type: type
   kwargs:
     content: "kitkennedy8@gmail.com"
+- name: invert screen
+  command_type: keystroke
+  description: invert coloring on screen (extra f2 is a hack because currently that's my sleep / wake hotkey)
+  kwargs:
+    keys: ["ctrl+shift+alt+f2", "f2"]

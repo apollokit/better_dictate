@@ -39,8 +39,11 @@ class CommandMultiplierParser:
     multiplier_fixed_conversions = {
         'to': 2,
         'two': 2,
+        'double': 2,
         'three': 3,
+        'triple': 3,
         'for': 4,
+        'quadruple': 4,
     }
 
     @staticmethod
