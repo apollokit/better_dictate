@@ -228,26 +228,43 @@ class PlainTextFormatter(TextFormatter):
         # the end of text
         if len(current_token) > 0:
             out_tokens.append(current_token)
-        print(out_tokens)
         the_text = ' '.join(out_tokens)
         self._log_step(3, the_text)
 
-        ## Handle capitalization
 
-        # Capitalize, if it begins with "capital/capitol"
-        if the_text[:8] in ['capital ', 'capitol ']:
-            the_text = the_text[8:]
-            the_text = the_text.capitalize()
+        ## Handle triggered capitalization 
+        the_text = the_text.replace('all caps', 'allcaps')
+        tokens = the_text.split()
+        # make this into a single token so it's easier to work with
+        out_tokens = []
+        next_capitalize = False
+        next_all_caps = False
+        for token in tokens:
+            # note the below are escape words and can't be used regularly
+            if token in ['capital','capitol']:
+                next_capitalize = True
+            elif token == 'allcaps':
+                next_all_caps = True
+            elif next_capitalize:
+                out_tokens.append(token.capitalize())
+                next_capitalize = False
+            elif next_all_caps:
+                out_tokens.append(token.upper())
+                next_all_caps = False
+            else:
+                out_tokens.append(token)
+        the_text = ' '.join(out_tokens)
         self._log_step(4, the_text)
 
-        # Only do this automatic capitalization if we saw the end of a 
-        # sentence
+
+        ## Handle automatic capitalization
+        # Only do this if we saw the end of a sentence
         if self._saw_end_of_sentence or force_capitalize:
             the_text = the_text.capitalize()
         self._log_step(5, the_text)
 
-        ## Handle spaces 2: Add
 
+        ## Handle spaces 2: Add
         # There should be a leading space if:
         # - There was no user action such that we're "typing in a new place", 
         # - The text is more than one character long.
