@@ -188,7 +188,7 @@ class PlainTextFormatter(TextFormatter):
         
         last_char = the_text[-1:]
         
-        ## Handle spaces 1
+        ## Handle spaces 1: identify (don't add yet)
 
         # explicitly mark that we need to add a space, if "space bar" 
         # precedes everything else
@@ -201,21 +201,52 @@ class PlainTextFormatter(TextFormatter):
             explicit_space_add = True
         self._log_step(2, the_text)
 
+        ## very hacky, the hijacking of "a m" as "a.m." bothers me
+        the_text = the_text.replace('a.m.', 'a m')
+
+
+        ## Compress repeated single letters into a single token (so that 
+        # multiple letters can be dictated easily for an acronym )
+        # note it's fine to do this right now because we haven't added any 
+        # spaces yet
+        tokens = the_text.split()
+        out_tokens = []
+        current_token = ""
+        for token in tokens:
+            if len(token) == 1 and (token.isdigit() or token.isalpha()):
+                # build up token from partials
+                current_token += token
+            else:
+                # if we were previously building up a token from partials, 
+                # now we're stopping. We should add it.
+                if len(current_token) > 0:
+                    out_tokens.append(current_token)
+                current_token = token
+                out_tokens.append(current_token)
+                current_token = ""
+        # handle the case where we were building up from partials until 
+        # the end of text
+        if len(current_token) > 0:
+            out_tokens.append(current_token)
+        print(out_tokens)
+        the_text = ' '.join(out_tokens)
+        self._log_step(3, the_text)
+
         ## Handle capitalization
 
         # Capitalize, if it begins with "capital/capitol"
         if the_text[:8] in ['capital ', 'capitol ']:
             the_text = the_text[8:]
             the_text = the_text.capitalize()
-        self._log_step(3, the_text)
+        self._log_step(4, the_text)
 
         # Only do this automatic capitalization if we saw the end of a 
         # sentence
         if self._saw_end_of_sentence or force_capitalize:
             the_text = the_text.capitalize()
-        self._log_step(4, the_text)
+        self._log_step(5, the_text)
 
-        ## Handle spaces 2
+        ## Handle spaces 2: Add
 
         # There should be a leading space if:
         # - There was no user action such that we're "typing in a new place", 
@@ -223,20 +254,20 @@ class PlainTextFormatter(TextFormatter):
         # - There's an explicit space add
         if (not saw_user_action and len(the_text) > 1) or explicit_space_add:
             the_text = " " + the_text
-        self._log_step(5, the_text)
+        self._log_step(6, the_text)
         
         # check if currently the end of sentence
         if last_char in END_OF_SENTENCE_CHARS:
             self._saw_end_of_sentence = True
         else:
             self._saw_end_of_sentence = False
-        self._log_step(6, the_text)
+        self._log_step(7, the_text)
 
         the_text = self.replace_fixed_patterns(the_text)
-        self._log_step(7, the_text)
+        self._log_step(8, the_text)
         
         the_text = self.fix_closures(the_text)
-        self._log_step(8, the_text)
+        self._log_step(9, the_text)
 
         return the_text
 
