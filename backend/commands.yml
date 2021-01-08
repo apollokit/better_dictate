@@ -176,7 +176,7 @@
     case: lower letters
     in_place: false
 - name: upper letters
-  aliases: ["upper letters"]
+  aliases: ["standing"]
   command_type: case
   kwargs:
     case: upper letters
@@ -261,3 +261,13 @@
   description: invert coloring on screen (extra f2 is a hack because currently that's my sleep / wake hotkey)
   kwargs:
     keys: ["ctrl+shift+alt+f2", "f2"]
+# - name: link tabitha
+#   command_type: keystroke
+#   comment: Copy the url for web page, and use Super+~ to tab between windows on the same application
+#   kwargs:
+#     keys:
+#     - "ctrl+l"
+#     - delay 0.20 # a delay to be sure that the event has registered
+#     - "ctrl+c"
+#     - delay 1 # a delay to be sure that the event has registered
+#     - "alt+~"
