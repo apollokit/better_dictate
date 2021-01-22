@@ -203,6 +203,7 @@ class PlainTextFormatter(TextFormatter):
 
         ## very hacky, the hijacking of "a m" as "a.m." bothers me
         the_text = the_text.replace('a.m.', 'a m')
+        self._log_step(3, the_text)
 
 
         ## Compress repeated single letters into a single token (so that 
@@ -229,7 +230,7 @@ class PlainTextFormatter(TextFormatter):
         if len(current_token) > 0:
             out_tokens.append(current_token)
         the_text = ' '.join(out_tokens)
-        self._log_step(3, the_text)
+        self._log_step(4, the_text)
 
 
         ## Handle triggered capitalization 
@@ -254,14 +255,34 @@ class PlainTextFormatter(TextFormatter):
             else:
                 out_tokens.append(token)
         the_text = ' '.join(out_tokens)
-        self._log_step(4, the_text)
+        self._log_step(5, the_text)
+        
+        ## Handle triggered camel/pascal case
+        # new chimney variable chimney name -> newVariableName
+        tokens = the_text.split()
+        # make this into a single token so it's easier to work with
+        out_tokens = []
+        next_camel = False
+        next_all_caps = False
+        for token in tokens:
+            # note the below are escape words and can't be used regularly
+            if token in ['chimney']:
+                next_camel = True
+            elif next_camel:
+                # append capitalized token onto the last token
+                out_tokens[-1] += token.capitalize()
+                next_camel = False
+            else:
+                out_tokens.append(token)
+        the_text = ' '.join(out_tokens)
+        self._log_step(6, the_text)
 
 
         ## Handle automatic capitalization
         # Only do this if we saw the end of a sentence
         if self._saw_end_of_sentence or force_capitalize:
             the_text = the_text.capitalize()
-        self._log_step(5, the_text)
+        self._log_step(7, the_text)
 
 
         ## Handle spaces 2: Add
@@ -271,20 +292,20 @@ class PlainTextFormatter(TextFormatter):
         # - There's an explicit space add
         if (not saw_user_action and len(the_text) > 1) or explicit_space_add:
             the_text = " " + the_text
-        self._log_step(6, the_text)
+        self._log_step(8, the_text)
         
         # check if currently the end of sentence
         if last_char in END_OF_SENTENCE_CHARS:
             self._saw_end_of_sentence = True
         else:
             self._saw_end_of_sentence = False
-        self._log_step(7, the_text)
+        self._log_step(9, the_text)
 
         the_text = self.replace_fixed_patterns(the_text)
-        self._log_step(8, the_text)
+        self._log_step(10, the_text)
         
         the_text = self.fix_closures(the_text)
-        self._log_step(9, the_text)
+        self._log_step(11, the_text)
 
         return the_text
 
