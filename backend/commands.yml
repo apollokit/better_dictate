@@ -225,15 +225,6 @@
     - _confluence open braces
     - pasta
     - _confluence close braces
-# - name: zelda pasta
-#   command_type: chain
-#   aliases: ["coat pasta"]
-#   description: Paste code with proper formatting for current app
-#   kwargs:
-#     commands:
-#     - _confluence open braces
-#     - pasta
-#     - _confluence close braces
 - name: find
   command_type: sublime_find
   aliases: ["finds", "search", "searched"]
