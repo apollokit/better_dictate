@@ -266,11 +266,14 @@ class PlainTextFormatter(TextFormatter):
         next_all_caps = False
         for token in tokens:
             # note the below are escape words and can't be used regularly
-            if token in ['chimney']:
+            if token in ['chimney', 'jimmy', 'timmy']:
                 next_camel = True
             elif next_camel:
                 # append capitalized token onto the last token
-                out_tokens[-1] += token.capitalize()
+                if len(out_tokens) > 0:
+                    out_tokens[-1] += token.capitalize()
+                else:
+                    out_tokens.append(token.capitalize())
                 next_camel = False
             else:
                 out_tokens.append(token)

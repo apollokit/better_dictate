@@ -21,8 +21,8 @@ abs_file_dir = path.dirname(path.abspath(__file__))
 # Icon paths
 # this has to be absolute...
 # use bad pun boy for the time being :bad_pun:
-active_icon = path.join(abs_file_dir, '..', 'sandbox', 'bad_pun_boy.png')
-sleeping_icon = path.join(abs_file_dir, '..', 'sandbox', 'bad_pun_boy_evil.png')
+active_icon = path.join(abs_file_dir, '..', 'ui', 'listening.png')
+sleeping_icon = path.join(abs_file_dir, '..', 'ui', 'sleeping2.png')
 
 ## Menu interaction handler functions
 
