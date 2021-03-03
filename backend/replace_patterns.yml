@@ -64,7 +64,7 @@
 # stuff with dot
 ". pie": ".py"
 # note this might get annoying for long-form dictation
-". ": "."
+# ". ": "."
 " colony": ":"
 "colony": ":"
 " colonnade": ":"

@@ -287,6 +287,33 @@ class PlainTextFormatter(TextFormatter):
             the_text = the_text.capitalize()
         self._log_step(7, the_text)
 
+        
+        ## Capitalize second, third, fourth ... sentences
+        # not the most efficient code, but whatever
+        for char in END_OF_SENTENCE_CHARS:
+            # make all end of sentence characters be separate tokens, so they can be split
+            # i.e. , replace "." with " ."
+            the_text = the_text.replace(char, ' '+char)
+        tokens = the_text.split()
+        # make this into a single token so it's easier to work with
+        out_tokens = []
+        next_cap = False
+        for token in tokens:
+            # if we found a period, we need to capitalize the next word
+            if token in END_OF_SENTENCE_CHARS:
+                next_cap = True
+                out_tokens.append(token)
+            elif next_cap:
+                # append capitalized token onto the last token
+                out_tokens.append(token.capitalize())
+                next_cap = False
+            else:
+                out_tokens.append(token)
+        the_text = ' '.join(out_tokens)
+        for char in END_OF_SENTENCE_CHARS:
+            the_text = the_text.replace(' '+char, char)
+        self._log_step(8, the_text)
+
 
         ## Handle spaces 2: Add
         # There should be a leading space if:
@@ -295,20 +322,20 @@ class PlainTextFormatter(TextFormatter):
         # - There's an explicit space add
         if (not saw_user_action and len(the_text) > 1) or explicit_space_add:
             the_text = " " + the_text
-        self._log_step(8, the_text)
+        self._log_step(9, the_text)
         
         # check if currently the end of sentence
         if last_char in END_OF_SENTENCE_CHARS:
             self._saw_end_of_sentence = True
         else:
             self._saw_end_of_sentence = False
-        self._log_step(9, the_text)
+        self._log_step(10, the_text)
 
         the_text = self.replace_fixed_patterns(the_text)
-        self._log_step(10, the_text)
+        self._log_step(11, the_text)
         
         the_text = self.fix_closures(the_text)
-        self._log_step(11, the_text)
+        self._log_step(12, the_text)
 
         return the_text
 
