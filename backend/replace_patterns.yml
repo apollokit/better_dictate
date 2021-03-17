@@ -63,6 +63,7 @@
 "space bar": " "
 # stuff with dot
 ". pie": ".py"
+". Pie": ".py"
 # note this might get annoying for long-form dictation
 # ". ": "."
 " colony": ":"
@@ -108,3 +109,4 @@
 "dash ": "-"
 "dash": "-"
 "cadmium": "CAD"
+"ai to": "ai2"

@@ -10,7 +10,7 @@ logger.setLevel(logging.DEBUG)
 # sleep_event: threading.Event(),
 
 # After this amount of time, the app manager will automatically put itself to sleep
-USER_INTERACTION_TIMEOUT = timedelta(minutes=10)
+USER_INTERACTION_TIMEOUT = timedelta(minutes=3)
 
 class AppManager:
     """Manages application overall state in a thread safe manner

@@ -289,30 +289,31 @@ class PlainTextFormatter(TextFormatter):
 
         
         ## Capitalize second, third, fourth ... sentences
+        # todo: should only do this when in long-form text mode, it tramples on dot notation in python
         # not the most efficient code, but whatever
-        for char in END_OF_SENTENCE_CHARS:
-            # make all end of sentence characters be separate tokens, so they can be split
-            # i.e. , replace "." with " ."
-            the_text = the_text.replace(char, ' '+char)
-        tokens = the_text.split()
-        # make this into a single token so it's easier to work with
-        out_tokens = []
-        next_cap = False
-        for token in tokens:
-            # if we found a period, we need to capitalize the next word
-            if token in END_OF_SENTENCE_CHARS:
-                next_cap = True
-                out_tokens.append(token)
-            elif next_cap:
-                # append capitalized token onto the last token
-                out_tokens.append(token.capitalize())
-                next_cap = False
-            else:
-                out_tokens.append(token)
-        the_text = ' '.join(out_tokens)
-        for char in END_OF_SENTENCE_CHARS:
-            the_text = the_text.replace(' '+char, char)
-        self._log_step(8, the_text)
+        # for char in END_OF_SENTENCE_CHARS:
+        #     # make all end of sentence characters be separate tokens, so they can be split
+        #     # i.e. , replace "." with " ."
+        #     the_text = the_text.replace(char, ' '+char)
+        # tokens = the_text.split()
+        # # make this into a single token so it's easier to work with
+        # out_tokens = []
+        # next_cap = False
+        # for token in tokens:
+        #     # if we found a period, we need to capitalize the next word
+        #     if token in END_OF_SENTENCE_CHARS:
+        #         next_cap = True
+        #         out_tokens.append(token)
+        #     elif next_cap:
+        #         # append capitalized token onto the last token
+        #         out_tokens.append(token.capitalize())
+        #         next_cap = False
+        #     else:
+        #         out_tokens.append(token)
+        # the_text = ' '.join(out_tokens)
+        # for char in END_OF_SENTENCE_CHARS:
+        #     the_text = the_text.replace(' '+char, char)
+        # self._log_step(8, the_text)
 
 
         ## Handle spaces 2: Add
