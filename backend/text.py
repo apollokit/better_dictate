@@ -93,6 +93,7 @@ class TextWriter:
         # note we need to do this after typing out anything with the 
         # keyboard controller!
         event_mngr.mouse_clicked.clear()
+        event_mngr.mouse_doubleclicked.clear()
         event_mngr.key_pressed.clear()
         event_mngr.saw_manual_sentence_end.clear()
 

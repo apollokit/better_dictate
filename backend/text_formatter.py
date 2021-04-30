@@ -174,14 +174,20 @@ class PlainTextFormatter(TextFormatter):
         self._log_step(1, the_text)
 
         logger.debug("Saw mouse_clicked: %s", str(event_mngr.mouse_clicked.is_set()))
+        logger.debug("Saw mouse_doubleclicked: %s", str(event_mngr.mouse_doubleclicked.is_set()))
         logger.debug("Saw key_pressed: %s", str(event_mngr.key_pressed.is_set()))
         logger.debug("Saw manual sentence end: %s", str(event_mngr.saw_manual_sentence_end.is_set()))
         
         # check if there was a user action since last time 
         saw_user_action = event_mngr.mouse_clicked.is_set() or \
             event_mngr.key_pressed.is_set()
+        saw_doubleclick = event_mngr.mouse_doubleclicked.is_set()
         # check if we should force capitalization
         force_capitalize = event_mngr.saw_manual_sentence_end.is_set()
+
+        # capitalize the text after we see a double click
+        if saw_doubleclick:
+            force_capitalize = True
 
         if saw_user_action:
             self._saw_end_of_sentence = False

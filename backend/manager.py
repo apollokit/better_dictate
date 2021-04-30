@@ -113,6 +113,8 @@ class EventManager:
         self.key_pressed = threading.Event()
         # indicates if the mouse has been clicked
         self.mouse_clicked = threading.Event()
+        # indicates if the mouse has been double clicked
+        self.mouse_doubleclicked = threading.Event()
 
 # the global app manager instance
 app_mngr = AppManager()
