@@ -3,12 +3,16 @@
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
+import platform
 import queue
 
-import click 
+import click
 
-# from audio import audio_thread, read_audio_from_file
-from ui.app_indicator import app_indicator_thread, gtk_main_thread
+plats_sys = platform.system()
+
+# app indicator only supported on linux for now
+if plats_sys == 'Linux':
+    from ui.app_indicator import app_indicator_thread, gtk_main_thread
 from ui.keyboard import keyb_listener
 from ui.mouse import mouse_listener
 from backend.manager import app_mngr
@@ -58,7 +62,7 @@ def go(
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = []
         futures.append(executor.submit(
-            webspeech_thread, 
+            webspeech_thread,
             raw_stt_output_q,
             WEBSPEECH_HOST,
             WEBSPEECH_PORT))
@@ -66,11 +70,13 @@ def go(
             executor_thread,
             raw_stt_output_q))
         futures.append(executor.submit(
-            app_indicator_thread))
-        futures.append(executor.submit(
-            gtk_main_thread))
-        futures.append(executor.submit(
             app_mngr.manager_thread))
+        # app indicator only supported on linux for now
+        if plats_sys == 'Linux':
+            futures.append(executor.submit(
+                app_indicator_thread))
+            futures.append(executor.submit(
+                gtk_main_thread))
         for future in as_completed(futures):
             logger.debug(f"Thread exit: {repr(future.exception())}")
 
