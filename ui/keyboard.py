@@ -1,4 +1,4 @@
-""" Functionality for dealing with keyboard interactions 
+""" Functionality for dealing with keyboard interactions
 """
 
 import logging
@@ -14,8 +14,6 @@ logger.setLevel(logging.DEBUG)
 
 HOTKEY_MOD = 'ctrl'
 HOTKEY_LETTER = 'Key.esc'
-
-keyboard_ctrlr = Controller()
 
 SLEEP_COUNT = 2
 SLEEP_KEY = 'Key.f2'
@@ -44,10 +42,10 @@ class KeyboardManager():
     def on_release(self,
         key: keyboard.KeyCode):
         """ Takes action upon key release.
-        
+
         Args:
             key: the key that was released
-        
+
         Returns:
             Usually nothing, but False when the thread should be shut down
         """
@@ -64,7 +62,7 @@ class KeyboardManager():
         if keystring == SLEEP_KEY:
             self.sleep_counter += 1
             if self.sleep_counter >= SLEEP_COUNT:
-                logger.debug('Saw sleep/wake hotkey')                    
+                logger.debug('Saw sleep/wake hotkey')
                 app_mngr.toggle_sleep()
                 clear_state()
         elif keystring == '.':

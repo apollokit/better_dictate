@@ -23,14 +23,14 @@ class MouseManager:
 
     def on_click(self, x, y, button, pressed):
         """Handle mouse clicks
-        
+
         when the mouse is released, mouse_clicked it is always set
 
         double-clicking works like this:
         - When the mouse is double clicked (with the second click coming
         within DOUBLECLICK_DELTA_S), the event is set
         - the event is only cleared when a fresh click comes after DOUBLECLICK_CLEAR_S
-        
+
         the intent for double-clicking is to allow a double click to set some
         useful state. The "clear" guard is so that we can triple click and not
         clear that state (because when you double-click a word in linux

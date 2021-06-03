@@ -16,8 +16,9 @@ if plats_sys == 'Linux':
 from ui.keyboard import keyb_listener
 from ui.mouse import mouse_listener
 from backend.manager import app_mngr
-from backend.executor import executor_thread
+from backend.executor import executor_inst, executor_thread
 from backend.webspeech import webspeech_thread
+from ui.kb_controller import KBCntrlrWrapperManager
 
 WEBSPEECH_HOST='localhost'
 WEBSPEECH_PORT=5678
@@ -58,6 +59,12 @@ def go(
     keyb_listener.start()
     mouse_listener.start()
 
+    # create the keyboard controller manager and start it
+    kb_cntrl_mngr = KBCntrlrWrapperManager()
+    kb_cntrl_mngr.start()
+
+    executor_inst.setup(kb_cntrl_mngr)
+
     # note that shutdown/quit event can be invoked from app_indicator.py
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = []
@@ -79,6 +86,8 @@ def go(
                 gtk_main_thread))
         for future in as_completed(futures):
             logger.debug(f"Thread exit: {repr(future.exception())}")
+
+    kb_cntrl_mngr.terminate()
 
 if __name__ == '__main__':
     cli()

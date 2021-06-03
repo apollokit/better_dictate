@@ -10,6 +10,7 @@ from pynput.keyboard import Controller, Key
 
 from backend.keystrokes import execute_modified_keystroke
 from backend.actions import Action, ActionHistory
+from ui.kb_controller import KBCntrlrWrapper
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -21,12 +22,9 @@ HOTKEY_SEPARATOR = '+'
 # use , to delimit multiple commands
 MULTIPLE_COMMAND_DELIMITER = ', '
 
-# a single controller for all command executors
-keyboard_controller = Controller()
-
 class CommandMultiplierParser:
     """Handles the parsing of command multiplier strings
-    
+
     Command multiplier strings are used to specify the number of times that a command must be executed. Examples: '3 times', '4 x'
     """
 
@@ -50,12 +48,12 @@ class CommandMultiplierParser:
     @staticmethod
     def check_valid_multiplier_token(token: str):
         """Returns true if the string token could be interpreted as a command multiplier token
-        
+
         This is useful for checking if a command name would clash with a command multiplier string
-        
+
         Args:
             token: the string to check for validity
-        
+
         Returns:
             True if the token could be a multiplier token
         """
@@ -81,10 +79,10 @@ class CommandMultiplierParser:
     @staticmethod
     def convert_multiplier(token: str) -> Optional[int]:
         """Convert a command multiplier token into the actual number
-                
+
         Args:
             token: the token from the raw command
-        
+
         Returns:
             the converted multiplier, or None if it couldn't be converted
         """
@@ -102,28 +100,28 @@ class CommandMultiplierParser:
     def parse_multiplier_string(
             multiplier_string: str) -> Tuple[int, int]:
         """Determines the multiplier number from a raw multiplier string
-        
+
         Args:
-            multiplier_string: the most player string, see class 
+            multiplier_string: the most player string, see class
                 documentation for examples
-        
+
         Returns:
             Tuple of:
             - the multiplier number
-            - the number of tokens used from the multiplier string to parse 
+            - the number of tokens used from the multiplier string to parse
                 the multiplier number. This is useful if the input multiplier
-                string could have trailing tokens that are not actual 
+                string could have trailing tokens that are not actual
                 multiplier string tokens
         """
 
         tokens_used = 0
 
         tokens = multiplier_string.split()
-        
+
         ## look for the multiplier number
         cmd_multiplier = CommandMultiplierParser.convert_multiplier(
             tokens[0])
-        # if a valid multiplier was not found, the multiplier is 
+        # if a valid multiplier was not found, the multiplier is
         # implicitly 1
         if cmd_multiplier is None:
             cmd_multiplier = 1
@@ -146,31 +144,31 @@ class CommandRegistry:
 
 class CommandExecutor(Action):
     """Executes a command
-    
-    Meant to be subclassed for specific command types    
+
+    Meant to be subclassed for specific command types
     """
     def __init__(self, cmd_reg: CommandRegistry):
         """Init
-        
+
         Args:
             cmd_reg: command registry, for command lookup
         """
         self.cmd_reg = cmd_reg
 
-    def execute(self, 
-            action_history: ActionHistory, 
+    def execute(self,
+            action_history: ActionHistory,
             cmd_execution_state: Dict[str, Any],
             stt_args: Optional[str] = None,):
         """Execute the command, with given arguments
-        
+
         should be overridden in subclasses
 
         Args:
-            action_history:  the history of actions executed. Used by some 
+            action_history:  the history of actions executed. Used by some
                 commands
-            stt_args: string of additional arguments received for an 
+            stt_args: string of additional arguments received for an
                 individual command
-            cmd_execution_state: dictionary of bespoke state to pass to     
+            cmd_execution_state: dictionary of bespoke state to pass to
                 command executors
 
         Returns:
@@ -180,14 +178,14 @@ class CommandExecutor(Action):
 
     def safe_deepcopy(self) -> CommandExecutor:
         """Deep copy this object, without copying things that shouldn't be copied
-        
+
         Returns:
             a new copy
         """
         new_copy = copy(self)
         for name, val in self.__dict__.items():
             # skip cmd_reg, because it has a thread lock in it
-            if name in ['_keyboard_ctlr', 'cmd_reg']:
+            if name in ['_kb_controller', 'cmd_reg']:
                 continue
             # others, deepcopy, to make sure there's no crosstalk between instances
             else:
@@ -198,49 +196,51 @@ class CommandExecutor(Action):
 
 class KeystrokeCmdExec(CommandExecutor):
     """Execute a keystroke command, which is a series of 1 or more hotkeys
-    
+
     Command name: 'keystroke'
-    cmd_def_kwargs: 
-        'keys': 
-            list of sequential keystroke hotkeys to execute, where each 
+    cmd_def_kwargs:
+        'keys':
+            list of sequential keystroke hotkeys to execute, where each
             hotkey may be one regular key plus 0 or more modifiers.
-            
-            Can also include "delay <float time>" to specify insertion of a delay    
+
+            Can also include "delay <float time>" to specify insertion of a delay
 
             Example: ['ctrl-c','delay 0.25','alt-v','tab','enter']
     """
 
-    def __init__(self, cmd_reg: CommandRegistry, 
+    def __init__(self, cmd_reg: CommandRegistry,
+            kb_controller: KBCntrlrWrapper,
             keys: List[str],
             prepend_whitespace_when_embedded: bool = False):
         """Init
-                
+
         Args:
+            kb_controller: the keyboard controller for doing kb output
             keys: see class docs
         """
         super().__init__(cmd_reg)
         self.keys = keys
-        self._keyboard_ctlr = keyboard_controller
+        self._kb_controller = kb_controller
         self.hotkey_separator = HOTKEY_SEPARATOR
 
         self.prepend_whitespace = prepend_whitespace_when_embedded
 
-    def execute(self, 
-            action_history: ActionHistory, 
+    def execute(self,
+            action_history: ActionHistory,
             cmd_execution_state: Dict[str, Any],
             stt_args: Optional[str] = None):
         """Execute command
 
         Note that when using system hotkeys like super+tab, you may need to
         insert a delay afterwards
-        
+
         Args:
             action_history: see superclass
             cmd_execution_state: see superclass
             stt_args: see superclass
         """
         logger.debug("KeystrokeCmdExec: typing keys: '{}'".format(self.keys))
-        
+
         embedded_command = cmd_execution_state['embedded_command']
 
         # there should be no speech to text arguments for keystroke command
@@ -248,7 +248,7 @@ class KeystrokeCmdExec(CommandExecutor):
 
         # type a space if desired
         if self.prepend_whitespace and embedded_command:
-            self._keyboard_ctlr.tap(Key.space)
+            self._kb_controller.tap(Key.space)
 
         for hotkey in self.keys:
             # deal with delay
@@ -257,47 +257,48 @@ class KeystrokeCmdExec(CommandExecutor):
                 time.sleep(delay_time)
                 continue
 
-            execute_modified_keystroke(self._keyboard_ctlr, hotkey, self.hotkey_separator)
+            execute_modified_keystroke(self._kb_controller, hotkey, self.hotkey_separator)
 
     # def undo(self) -> bool:
     #     """Undo the action
 
     #     Returns:
-    #         True if this undo was "substantial". See documentation for     
+    #         True if this undo was "substantial". See documentation for
     #             Action() for more information
     #     """
     #     return True
-            
-    
+
+
 class TypeCmdExec(CommandExecutor):
     """Execute a type command, which is just typing out a string
-    
+
     Command name: 'type'
-    cmd_def_kwargs: 
+    cmd_def_kwargs:
         'content': the string content to type, e.g. "I'm a string"
     """
 
-    def __init__(self, cmd_reg: CommandRegistry, 
+    def __init__(self, cmd_reg: CommandRegistry,
+            kb_controller: KBCntrlrWrapper,
             content: List[str],
             prepend_whitespace_when_embedded: bool = True
             ):
         """Init
-        
+
         Args:
             content: see class docs
         """
         super().__init__(cmd_reg)
         self.text = content
-        self._keyboard_ctlr = keyboard_controller
+        self._kb_controller = kb_controller
 
         self.prepend_whitespace = prepend_whitespace_when_embedded
-        
-    def execute(self, 
-            action_history: ActionHistory, 
+
+    def execute(self,
+            action_history: ActionHistory,
             cmd_execution_state: Dict[str, Any],
             stt_args: Optional[str] = None):
         """Execute command
-        
+
         Args:
             action_history: see superclass
             cmd_execution_state: see superclass
@@ -313,27 +314,27 @@ class TypeCmdExec(CommandExecutor):
         # there should be no speech to text arguments for keystroke command
         assert stt_args is None
 
-        self._keyboard_ctlr.type(self.text)
+        self._kb_controller.type(self.text)
 
     def undo(self) -> bool:
         """Undo the text writing action
-        
+
         Deletes all the characters written
 
         Returns:
-            True, because this action is "substantial". See 
+            True, because this action is "substantial". See
                 documentation for Action() for more information
         """
         logger.debug('TypeCmdExec: undo, deleting text {}'.format(self.text))
         for char in self.text: #pylint: disable=unused-variable
-            self._keyboard_ctlr.tap(Key.backspace)
+            self._kb_controller.tap(Key.backspace)
         return True
-    
+
 class CaseCmdExec(CommandExecutor):
     """Executea case command, which formats the text arguments with a specific case, like snake case
-    
+
     Command name: 'case'
-    cmd_def_kwargs: 
+    cmd_def_kwargs:
         'case': the case to use
         'in_place': if true, will apply the case to the highlighted text
 
@@ -347,11 +348,11 @@ class CaseCmdExec(CommandExecutor):
     """
 
     CASES = [
-        'upper', 
-        'lower', 
-        'title', 
-        'snake', 
-        'screaming snake', 
+        'upper',
+        'lower',
+        'title',
+        'snake',
+        'screaming snake',
         'camel',
         'pascal',
         'lower letters',
@@ -359,13 +360,14 @@ class CaseCmdExec(CommandExecutor):
         'name letters'
     ]
 
-    def __init__(self, cmd_reg: CommandRegistry, 
-            case: str, 
+    def __init__(self, cmd_reg: CommandRegistry,
+            kb_controller: KBCntrlrWrapper,
+            case: str,
             in_place: bool,
             prepend_whitespace_when_embedded: bool = True
             ):
         """Init
-        
+
         Args:
             cmd_reg: see superclass docs
             case: see class docs
@@ -378,18 +380,18 @@ class CaseCmdExec(CommandExecutor):
             raise NotImplementedError
         self.in_place = in_place
 
-        self._keyboard_ctlr = keyboard_controller
+        self._kb_controller = kb_controller
 
         # whether or not to prepend and append a white space before / after the formatted text
         self.prepend_whitespace = prepend_whitespace_when_embedded
         # self.append_whitespace = False
-        
-    def execute(self, 
-            action_history: ActionHistory, 
+
+    def execute(self,
+            action_history: ActionHistory,
             cmd_execution_state: Dict[str, Any],
             stt_args: Optional[str] = None):
         """Execute command
-        
+
         Args:
             action_history: see superclass
             cmd_execution_state: see superclass
@@ -405,29 +407,29 @@ class CaseCmdExec(CommandExecutor):
             #     the_text = the_text + ' '
             logger.debug("CaseCmdExec: typing: '{}'".format(the_text))
             self.text = the_text
-            self._keyboard_ctlr.type(the_text)
+            self._kb_controller.type(the_text)
         else:
             # there should be no speech to text arguments for this case
             assert stt_args is None
 
     def undo(self) -> bool:
         """Undo the text writing action
-        
+
         Deletes all the characters written
 
         Returns:
-            True, because this action is "substantial". See 
+            True, because this action is "substantial". See
                 documentation for Action() for more information
         """
         logger.debug('CaseCmdExec: undo, deleting text {}'.format(self.text))
         for char in self.text: #pylint: disable=unused-variable
-            self._keyboard_ctlr.tap(Key.backspace)
+            self._kb_controller.tap(Key.backspace)
         return True
 
     @staticmethod
     def format_case(text: str, case: str) -> str: #pylint: disable=too-many-return-statements
         """Format a list of string tokens in the given case
-        
+
         Args:
             text: string of words separated by spaces
             case: the case in which to format
@@ -440,32 +442,32 @@ class CaseCmdExec(CommandExecutor):
         # returns 'BAY LAUGH ANGUISH HANNOVER'
         if case == 'upper':
             return ' '.join([token.upper() for token in tokens])
-        
+
         # the raw tokens look like: 'bay laugh anguish hannover'
         # returns 'bay laugh anguish hannover'
         elif case == 'lower':
             return ' '.join([token.lower() for token in tokens])
-        
+
         # the raw tokens look like: 'bay laugh anguish hannover'
         # returns 'Bay Laugh Anguish Hannover'
         elif case == 'title':
             return ' '.join([token.capitalize() for token in tokens])
-        
+
         # the raw tokens look like: 'bay laugh anguish hannover'
         # returns 'BayLaughAnguishHannover'
         elif case == 'pascal':
             return ''.join([token.capitalize() for token in tokens])
-        
+
         # the raw tokens look like: 'bay laugh anguish hannover'
         # returns 'bay_laugh_anguish_hannover'
         elif case == 'snake':
             return '_'.join(tokens)
-        
+
         # the raw tokens look like: 'bay laugh anguish hannover'
         # returns 'BAY_LAUGH_ANGUISH_HANNOVER'
         elif case == 'screaming snake':
             return '_'.join([token.upper() for token in tokens])
-        
+
         # the raw tokens look like: 'bay laugh anguish hannover'
         # returns 'bayLaughAnguishHannover'
         elif case == 'camel':
@@ -477,21 +479,21 @@ class CaseCmdExec(CommandExecutor):
         elif case == 'acronym':
             first_letters = [token[0].upper() for token in tokens]
             return ''.join(first_letters)
-        
+
         # the raw tokens look like: 'blah' or 'b l a h'
         # returns 'blah'
         elif case == 'lower letters':
             joined = ''.join(tokens)
             joined = joined.replace(' ','')
             return joined.lower()
-        
+
         # the raw tokens look like: 'blah' or 'b l a h'
         # returns 'BLAH'
         elif case == 'upper letters':
             joined = ''.join(tokens)
             joined = joined.replace(' ','')
             return joined.upper()
-        
+
         # the raw tokens look like: 'blah' or 'b l a h'
         # returns 'Blah'
         elif case == 'name letters':
@@ -504,32 +506,33 @@ class CaseCmdExec(CommandExecutor):
 
 class SublimeFindCmdExec(CommandExecutor):
     """Execute a sublime find command to move to desired text within the current file
-    
+
     Command name: 'sublime_find'
     cmd_def_kwargs:
         'direction': the direction in which to do the find, either forwards (down) or backwards (up)
     """
 
-    def __init__(self, cmd_reg: CommandRegistry, 
+    def __init__(self, cmd_reg: CommandRegistry,
+            kb_controller: KBCntrlrWrapper,
             direction: str, find_hotkey: str = 'ctrl+f'):
         """Init
-        
+
         Args:
             cmd_reg: see superclass docs
             direction: see class docs
         """
         super().__init__(cmd_reg)
         self.direction = direction
-        self._keyboard_ctlr = keyboard_controller
+        self._kb_controller = kb_controller
         self.hotkey_separator = HOTKEY_SEPARATOR
         self.find_hotkey = find_hotkey
 
-    def execute(self, 
-            action_history: ActionHistory, 
+    def execute(self,
+            action_history: ActionHistory,
             cmd_execution_state: Dict[str, Any],
             stt_args: Optional[str] = None):
         """Execute command
-        
+
         Args:
             action_history: see superclass
             cmd_execution_state: see superclass
@@ -544,11 +547,11 @@ class SublimeFindCmdExec(CommandExecutor):
         # the expected format is "<string content to search><multiplier_separator_substr><multiplier string>", where  multiplier format is per CommandMultiplierParser
         try:
             content, multiplier_str = stt_args.split(multiplier_separator_substr)
-            
-            # 
+
+            #
             cmd_multiplier, _ = CommandMultiplierParser.parse_multiplier_string(multiplier_str)
             num_tabs = cmd_multiplier
-        
+
         except ValueError:
             # in this case, make sure that there's not a semicolon in the string at all (the value error could be because there were multiple semicolons, which is unexpected in current implementation)
             assert stt_args.find(multiplier_separator_substr) == -1
@@ -560,53 +563,54 @@ class SublimeFindCmdExec(CommandExecutor):
         logger.debug("SublimeFindCmdExec: searching for '{}', tabbing {} times".format(content, num_tabs))
 
         # enter the find dialog in sublime text
-        execute_modified_keystroke(self._keyboard_ctlr, self.find_hotkey, self.hotkey_separator)
-        
+        execute_modified_keystroke(self._kb_controller, self.find_hotkey, self.hotkey_separator)
+
         #throw in a sleep, because if I try to use this in the browser not all the content gets captured
         time.sleep(0.2)
 
         # type the search string
-        self._keyboard_ctlr.type(content)
-        
+        self._kb_controller.type(content)
+
         for icommand in range(num_tabs):
-            self._keyboard_ctlr.tap(Key.tab)
+            self._kb_controller.tap(Key.tab)
 
         # hit enter to drop the cursor to the left of the search string
-        self._keyboard_ctlr.tap(Key.enter)
+        self._kb_controller.tap(Key.enter)
 
     def undo(self) -> bool:
         """Undo
 
         Returns:
-            False, because this action is not considered "substantial". See 
+            False, because this action is not considered "substantial". See
                 documentation for Action() for more information
         """
         # note that this is a noop
         return False
-    
+
 class UndoUtteranceCmdExec(CommandExecutor):
     """Undo the last utterance
-    
+
     Command name: 'undo_utterance'
     cmd_def_kwargs:
         None
     """
 
-    def __init__(self, cmd_reg: CommandRegistry):
+    def __init__(self, cmd_reg: CommandRegistry,
+                 kb_controller: KBCntrlrWrapper):
         """Init
-        
+
         Args:
             cmd_reg: see superclass docs
             direction: see class docs
         """
         super().__init__(cmd_reg)
 
-    def execute(self, 
-            action_history: ActionHistory, 
+    def execute(self,
+            action_history: ActionHistory,
             cmd_execution_state: Dict[str, Any],
             stt_args: Optional[str] = None):
         """Execute command
-        
+
         Args:
             action_history: see superclass
             cmd_execution_state: see superclass
@@ -616,11 +620,11 @@ class UndoUtteranceCmdExec(CommandExecutor):
         assert stt_args is None
 
         logger.debug("UndoUtteranceCmdExec: undoing last utterance")
-        
+
         # undo the utterance
         substantial = action_history.undo_utterance()
         # if the actions in an utterance are considered "not substantial", this
-        # will be False. In that case, we should proceed to continue undoing 
+        # will be False. In that case, we should proceed to continue undoing
         # until we reach a substantial undo
         while not substantial:
             substantial = action_history.undo_utterance()
@@ -629,24 +633,26 @@ class UndoUtteranceCmdExec(CommandExecutor):
         """Undo
 
         Returns:
-            False, because this action is not considered "substantial". See 
+            False, because this action is not considered "substantial". See
                 documentation for Action() for more information
         """
-        # note that this is a noop - we're not going to revert the undoing 
+        # note that this is a noop - we're not going to revert the undoing
         # action
         return False
 
 class ChainCommandExec(CommandExecutor):
     """Execute a chain command, which is multiple commands strung together
-    
+
     Command name: 'chain'
-    cmd_def_kwargs: 
+    cmd_def_kwargs:
         'commands': a list of command names to execute, in order
     """
 
-    def __init__(self, cmd_reg: CommandRegistry, commands: List[str]):
+    def __init__(self, cmd_reg: CommandRegistry, 
+            kb_controller: KBCntrlrWrapper,
+            commands: List[str]):
         """Init
-        
+
         Args:
             commands: see class docs
         """
@@ -654,12 +660,12 @@ class ChainCommandExec(CommandExecutor):
         self.commands = commands
         self.executed_actions: List[Action] = []
 
-    def execute(self, 
-            action_history: ActionHistory, 
+    def execute(self,
+            action_history: ActionHistory,
             cmd_execution_state: Dict[str, Any],
             stt_args: Optional[str] = None):
         """Execute command
-        
+
         Args:
             action_history: see superclass
             cmd_execution_state: see superclass
@@ -671,24 +677,24 @@ class ChainCommandExec(CommandExecutor):
 
         # there should be no speech to text arguments for chain command
         assert stt_args is None
-        
+
         for icommand, cmd_name in enumerate(self.commands):
             executor = self.cmd_reg.get_command_executor(cmd_name)
             # cmd_def_kwargs = self.cmd_reg.get_command_def_kwargs(cmd_name)
-            
+
             # if we are in a chain, this should only be true for the first one
             if icommand > 0:
                 cmd_execution_state['embedded_command'] = False
 
             self.executed_actions.append(
-                executor.execute(action_history, 
+                executor.execute(action_history,
                     cmd_execution_state, stt_args=None))
 
     def undo(self) -> bool:
         """Undo
-        
+
         Returns:
-            True, if all the actions in this chain are "substantial". See 
+            True, if all the actions in this chain are "substantial". See
                 documentation for Action() for more information
         """
         substantial = False
@@ -708,7 +714,7 @@ class CommandRegistry: # pylint: disable=function-redefined
 
     # nothing from string command type in the command definition to the class
     command_types = {
-        'keystroke': KeystrokeCmdExec, 
+        'keystroke': KeystrokeCmdExec,
         'chain': ChainCommandExec,
         'type': TypeCmdExec,
         'case': CaseCmdExec,
@@ -716,9 +722,9 @@ class CommandRegistry: # pylint: disable=function-redefined
         'undo_utterance': UndoUtteranceCmdExec,
     }
 
-    def __init__(self, commands_def: List[CommandDefinition]):
+    def __init__(self, commands_def: List[CommandDefinition], kb_controller: KBCntrlrWrapper):
         """Init
-        
+
         Args:
             commands_def: the commands definition, loaded from file or elsewhere
         """
@@ -729,6 +735,9 @@ class CommandRegistry: # pylint: disable=function-redefined
 
         # mapping from a command name to the executor instance for it
         self.commands: Dict[str, CommandExecutor] = {}
+
+        # have to store this so it can be passed to all underlying commands
+        self.kb_controller = kb_controller
 
         # tree of nested dicts encoding a lookup table for command name tokens, like:
         # first word      second word      third word
@@ -746,7 +755,7 @@ class CommandRegistry: # pylint: disable=function-redefined
 
     def update_commands(self, commands_def: List[CommandDefinition]):
         """Update the commands in the internal registry
-        
+
         Args:
             commands_def: the commands definition, loaded from file or elsewhere
         """
@@ -760,14 +769,14 @@ class CommandRegistry: # pylint: disable=function-redefined
                 logger.debug('(%d) Loading command: %s', icommand, name)
                 self.commands[name] = \
                     self.command_types[command_def['command_type']](
-                        self, **kwargs)
+                        self, kb_controller=self.kb_controller, **kwargs)
 
         self._build_cmd_token_tree()
 
     @property
     def cmd_names(self) -> List[str]:
         """Returns a list of command names
-        
+
         Returns:
             the command names
         """
@@ -775,7 +784,7 @@ class CommandRegistry: # pylint: disable=function-redefined
 
     def _build_cmd_token_tree(self):
         """Build internal look up table of command words
-        """        
+        """
 
         # reset it
         self._cmd_token_tree = {}
@@ -787,7 +796,7 @@ class CommandRegistry: # pylint: disable=function-redefined
             cmd_name_invalid = CommandMultiplierParser.check_valid_multiplier_token(first_word)
             if cmd_name_invalid:
                 raise ValueError(f'Token "{first_word}" is not a valid beginning of a command name. It could be interpreted as a command multiplier')
-            
+
             # todo: add support for more than 3 levels?
             current_level = self._cmd_token_tree
             current_level.setdefault(words[0], {})
@@ -806,11 +815,11 @@ class CommandRegistry: # pylint: disable=function-redefined
 
 
         Args:
-            tokens_so_far: list of tokens that have been parsed from the 
+            tokens_so_far: list of tokens that have been parsed from the
                 command name thus far. Eg, if the command name is "do my
                 homework", then ['do'] would return ['my'] (and
                 additional tokens, if other commands start with 'do')
-        
+
         Returns:
             list of next available words for valid command names
         """
@@ -830,41 +839,41 @@ class CommandRegistry: # pylint: disable=function-redefined
 
     def get_command_executor(self, cmd_name: str) -> CommandExecutor:
         """Get the executor instance for a given command name
-        
+
         Args:
             cmd_name: the name of the command
-        
+
         Returns:
             executor instance
         """
-        # make a deep copy before returning, because each CommandExecutor keeps 
+        # make a deep copy before returning, because each CommandExecutor keeps
         # track of a single instance of executing a command
         return self.commands[cmd_name].safe_deepcopy()
 
 class CommandDispatcher:
     """Handles the execution of all single commands
-    
+
     Parses and executes the text for any command. delegates the details of
-    execution to subclasses of CommandExecutor.    
+    execution to subclasses of CommandExecutor.
     """
 
     def __init__(self, cmd_reg: CommandRegistry, action_history: ActionHistory):
         """Init
-        
+
         Args:
             cmd_reg: the command
         """
         self.cmd_reg = cmd_reg
         self.action_history = action_history
 
-    def dispatch(self, raw_command_text: str, 
+    def dispatch(self, raw_command_text: str,
             cmd_execution_state: Dict[str, Any]) -> List[Action]:
         """Dispatch a given raw command text for execution
-                
+
         Args:
             raw_command_text: the raw string command text, as output by the
                 speech-to-text engine
-            cmd_execution_state: dictionary of bespoke state to pass to     
+            cmd_execution_state: dictionary of bespoke state to pass to
                 command executors
 
         Returns:
@@ -872,42 +881,42 @@ class CommandDispatcher:
         """
 
         logger.debug("Raw command: '{}'".format(raw_command_text))
-        
+
         # if there are multiple commands, we should split them out
         commands = raw_command_text.split(MULTIPLE_COMMAND_DELIMITER)
-        
+
         # the actions taken by the commands
         actions = []
 
         for icommand, command in enumerate(commands):
             cmd_name, cmd_mult, cmd_args = self.parse(command)
-            
+
             logger.debug("  Raw command {}: '{}'".format(icommand, command))
             logger.debug("  Command name: '{}'".format(cmd_name))
             logger.debug("  embedded_command: {}".format(cmd_execution_state['embedded_command']))
-            
+
             executor = self.cmd_reg.get_command_executor(cmd_name)
-            
+
             # execute cmd_mult times
             for _ in range(cmd_mult):
-                executor.execute(self.action_history, 
+                executor.execute(self.action_history,
                     cmd_execution_state=cmd_execution_state,
                     stt_args=cmd_args
                     )
                 # here, the executor IS the action
                 actions.append(executor)
-        
+
         return actions
 
     def parse(self, command_text: str) -> Tuple[str, int, str]: #pylint: disable=too-many-branches
         """Parse a command text
-        
+
         Rurns a raw command string into arguments for actual execution
-        
+
         Args:
             command_text: the raw string command text, as output by the
                 speech-to-text engine
-        
+
         Returns:
             Tuple the command name, the execution multiplier, and remaining argument text for
                 the command
@@ -974,7 +983,7 @@ class CommandDispatcher:
         # it should be a known command
         cmd_name = ' '.join(cmd_name_tokens)
         assert cmd_name in self.cmd_reg.cmd_names
-        
+
         if cmd_args:
             # join together the tokens and output as a full string
             cmd_args = ' '.join(cmd_args)

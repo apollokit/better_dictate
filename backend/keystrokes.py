@@ -3,12 +3,15 @@ from typing import List, Tuple
 
 from pynput.keyboard import Key
 
-# hard-coded config parameters for now...
-# running this on a linux box
-IS_LINUX = True
-# using sticky keys
-USING_STICKY_KEYS = True
+from ui.kb_controller import KBCntrlrWrapper, KBCntrlCommand
 
+from backend.file_utils import unyaml_thing
+
+config = unyaml_thing('config.yaml')
+
+# if running this on a linux box
+IS_LINUX = config['is_linux']
+USING_STICKY_KEYS = config['sticky_keys']
 
 MODIFIERS_MAP = {
     'ctrl': Key.ctrl,
@@ -92,7 +95,7 @@ def parse_hotkey(
     return modifiers_obj, operand_key_mapped, was_special_operand
 
 def execute_modified_keystroke(
-        keyboard_ctlr, hotkey, hotkey_separator: str = '+'):
+        kb_controller: KBCntrlrWrapper, hotkey, hotkey_separator: str = '+'):
     """Execute a keystroke with modifiers
     
     We need special handling with modifiers, because there's
@@ -100,7 +103,7 @@ def execute_modified_keystroke(
     
     Args:
         hotkey: see documentation for parse_hotkey()
-        keyboard_ctlr: the keyboard controller to use to type the keystrokes
+        kb_controller: the keyboard controller to use to type the keystrokes
         hotkey_separator: see documentation for parse_hotkey()
     """
 
@@ -115,9 +118,9 @@ def execute_modified_keystroke(
     
     if len(modifiers) > 0:
         last_modifier = modifiers[-1]
-    with keyboard_ctlr.pressed(*modifiers):
-        keyboard_ctlr.press(operand_key)
-        keyboard_ctlr.release(operand_key)
+    with kb_controller.pressed(*modifiers):
+        kb_controller.press(operand_key)
+        kb_controller.release(operand_key)
 
     if IS_LINUX and USING_STICKY_KEYS:
         ## Special handling for sticky keys...
@@ -130,8 +133,8 @@ def execute_modified_keystroke(
         if len(modifiers) > 0 and not was_special_operand:
             # we start out in sticky "single press" mode...cycle to 
             # sticky latched
-            keyboard_ctlr.press(last_modifier)
-            keyboard_ctlr.release(last_modifier)
+            kb_controller.press(KBCntrlCommand('press', last_modifier))
+            kb_controller.release(KBCntrlCommand('release', last_modifier))
             # now cycle to "unstuck"
-            keyboard_ctlr.press(last_modifier)
-            keyboard_ctlr.release(last_modifier)
+            kb_controller.press(KBCntrlCommand('press', last_modifier))
+            kb_controller.release(KBCntrlCommand('release', last_modifier))

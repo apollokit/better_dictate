@@ -15,6 +15,7 @@ from backend.commands import CommandDispatcher, CommandRegistry
 from backend.manager import app_mngr, event_mngr
 from backend.text import TextWriter
 from backend.actions import Action, ActionHistory
+from ui.kb_controller import KBCntrlrWrapper, KBCntrlrWrapperManager
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -30,25 +31,54 @@ class Executor:
     commands_file = path.join(path.dirname(__file__), 'commands.yml')
 
     def __init__(self):
-        ## create the command dispatcher
+        """init
 
-        with open(self.commands_file, 'r') as f:
-            commands_def = yaml.load(f, Loader=yaml.FullLoader)
-        self.cmd_reg = CommandRegistry(commands_def)
+        Make sure to call setup() before doing anything
+        """
+        ## create the command dispatcher
         
         # the history of actions taken
         self.history = ActionHistory() 
         
-        # make a command dispatcher.need to pass history to it because
-        # there are commands that do stuff with that history
-        self.cmd_exec = CommandDispatcher(self.cmd_reg, self.history)
-        
         # lock to prevent updating the command registry in the middle of parsing
         self._cmd_reg_lock = threading.Lock()
 
-        # create the text writer
-        self.text_writer = TextWriter()
+        # these get created in setup()
+        self.cmd_exec: CommandDispatcher = None
+        self.cmd_reg: CommandRegistry = None
+        self.text_writer: TextWriter = None
 
+        # a small sanity check that we do the set up step before any other stuff
+        self._setup_done = False
+
+    def setup(self, kb_cntrl_mngr: KBCntrlrWrapperManager):
+        """Setup internal tools.  Needs to be called before actually executing anything
+
+        This separate setup step is necessary because the keyboard controller manager object 
+        passed here can only be created in the main loop, and it's convenient to be able 
+        to create an Executor object outside of the main loop. This way, we can
+        create the executor object, then call setup() when we're ready
+
+        Args:
+            kb_cntrl_mngr: keyboard controller manager object
+        """
+        if self._setup_done:
+            raise Exception('setup() should only be called once')
+
+        kb_controller = kb_cntrl_mngr.get_kb_cntrl_wrapper()
+
+        with open(self.commands_file, 'r') as f:
+            commands_def = yaml.load(f, Loader=yaml.FullLoader)
+        self.cmd_reg = CommandRegistry(commands_def, kb_controller)
+
+        # make a command dispatcher.need to pass history to it because
+        # there are commands that do stuff with that history
+        self.cmd_exec = CommandDispatcher(self.cmd_reg, self.history)
+
+        # create the text writer
+        self.text_writer = TextWriter(kb_controller)
+
+        self._setup_done = True
 
 
     def reload_commands(self):
@@ -71,6 +101,9 @@ class Executor:
         Args:
             raw_utterance: the text directly out of the speech-to-text engine
         """
+        if not self._setup_done:
+            raise Exception('Need to call setup() first')
+
         text = raw_utterance
         text = text.lower()
         text = text.strip()
@@ -157,7 +190,6 @@ class Executor:
         finally:
             self._cmd_reg_lock.release()
         
-
 executor_inst = Executor()
 
 def executor_thread(raw_stt_output_q: Queue):
