@@ -192,7 +192,7 @@ class Executor:
         
 executor_inst = Executor()
 
-def executor_thread(raw_stt_output_q: Queue):
+def do_executor(raw_stt_output_q: Queue):
     """ Execution thread for parsing and acting output from inference
     
     Args:

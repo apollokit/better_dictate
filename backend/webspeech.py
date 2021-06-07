@@ -11,7 +11,7 @@ from backend.manager import app_mngr
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-def webspeech_thread(
+def do_webspeech(
         raw_stt_output_q: Queue,
         host: str = 'localhost',
         port: int = 5678

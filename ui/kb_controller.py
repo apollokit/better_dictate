@@ -31,6 +31,7 @@ def pynp_kb_cntrl_job(command_queue: Queue):
     logger.info('Pynput keyboard controller job started')
 
     while True:
+        # blocks until something available
         command: KBCntrlCommand = command_queue.get()
         # tap key
         if command.name == 'tap':
@@ -46,6 +47,8 @@ def pynp_kb_cntrl_job(command_queue: Queue):
             break
         else:
             raise NotImplementedError(f'No command "{command.name}"')
+
+    logger.info('Pynput keyboard controller job terminated')
 
 class KBCntrlrWrapper:
     """This class is a wrapper around pynput.keyboard.Controller

@@ -6,6 +6,7 @@
 #pylint: disable=wrong-import-position
 from os import path
 import time
+from threading import Thread
 
 import gi
 gi.require_version('Gtk', '3.0') 
@@ -71,7 +72,7 @@ _indicator.set_menu(menu())
 
 ## Threads
 
-def app_indicator_thread():
+def do_app_indicator():
     """Thread function that handles updating the app system tray icon    
     """
 
@@ -97,6 +98,8 @@ def app_indicator_thread():
                 'BetterDictate is active')
 
         time.sleep(0.01)
+
+app_indicator_thread = Thread(target=do_app_indicator)
 
 # also have to run this thread. It's the background thing that actually
 # manages the UI

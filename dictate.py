@@ -5,19 +5,21 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 import platform
 import queue
+from threading import Thread
 
 import click
 
 plats_sys = platform.system()
 
-# app indicator only supported on linux for now
 if plats_sys == 'Linux':
-    from ui.app_indicator import app_indicator_thread, gtk_main_thread
+    from ui.app_indicator_linux import app_indicator_thread, gtk_main_thread
+if plats_sys == 'Darwin':
+    from ui.app_indicator_mac import MenuBarManager
 from ui.keyboard import keyb_listener
 from ui.mouse import mouse_listener
 from backend.manager import app_mngr
-from backend.executor import executor_inst, executor_thread
-from backend.webspeech import webspeech_thread
+from backend.executor import executor_inst, do_executor
+from backend.webspeech import do_webspeech
 from ui.kb_controller import KBCntrlrWrapperManager
 
 WEBSPEECH_HOST='localhost'
@@ -62,32 +64,41 @@ def go(
     # create the keyboard controller manager and start it
     kb_cntrl_mngr = KBCntrlrWrapperManager()
     kb_cntrl_mngr.start()
+    
+    if plats_sys == 'Darwin':
+        # create the menu bar manager and start it
+        menu_mngr = MenuBarManager()
+        menu_mngr.start()
 
     executor_inst.setup(kb_cntrl_mngr)
 
-    # note that shutdown/quit event can be invoked from app_indicator.py
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = []
-        futures.append(executor.submit(
-            webspeech_thread,
-            raw_stt_output_q,
-            WEBSPEECH_HOST,
-            WEBSPEECH_PORT))
-        futures.append(executor.submit(
-            executor_thread,
-            raw_stt_output_q))
-        futures.append(executor.submit(
-            app_mngr.manager_thread))
-        # app indicator only supported on linux for now
-        if plats_sys == 'Linux':
-            futures.append(executor.submit(
-                app_indicator_thread))
-            futures.append(executor.submit(
-                gtk_main_thread))
-        for future in as_completed(futures):
-            logger.debug(f"Thread exit: {repr(future.exception())}")
+    # set up threads
+    webspeech_thread = Thread(target=do_webspeech, args=(raw_stt_output_q,
+                                                         WEBSPEECH_HOST,
+                                                         WEBSPEECH_PORT))
+    executor_thread = Thread(target=do_executor, args=(raw_stt_output_q,))
+    manager_thread = Thread(target=app_mngr.do_manager)
+    
+    # start the threads
+    webspeech_thread.start()
+    executor_thread.start()
+    manager_thread.start()
+
+    if plats_sys == 'Linux':
+        app_indicator_thread.start()
+        gtk_main_thread.start()
+
+    # wait for them all to finish
+    webspeech_thread.join()
+    executor_thread.join()
+    manager_thread.join()
+    if plats_sys == 'Linux':
+        app_indicator_thread.join()
+        gtk_main_thread.join()
 
     kb_cntrl_mngr.terminate()
+    if plats_sys == 'Darwin':
+        menu_mngr.terminate()
 
 if __name__ == '__main__':
     cli()

@@ -84,7 +84,7 @@ class AppManager:
         self._quit_lock.release()
         return quit
 
-    def manager_thread(self):
+    def do_manager(self):
         """ Execution read for housekeeping stuff in the manager        
         """
 
