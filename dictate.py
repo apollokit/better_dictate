@@ -23,7 +23,7 @@ from backend.webspeech import do_webspeech
 from ui.kb_controller import KBCntrlrWrapperManager
 
 WEBSPEECH_HOST='localhost'
-WEBSPEECH_PORT=5678
+WEBSPEECH_PORT=5679
 
 form = "%(asctime)s %(levelname)-8s %(name)-15s %(message)s"
 logging.basicConfig(format=form,

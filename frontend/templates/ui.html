@@ -14,7 +14,7 @@
     let final = "";
     
     function connect() {
-      let ws = new WebSocket('ws://localhost:5678/');
+      let ws = new WebSocket('ws://localhost:5679/');
       ws.onopen = function(e) {
         textconnected.innerText = "ws: connected";
         texterror.innerText = "";
