@@ -50,7 +50,14 @@
   command_type: keystroke
   description: Paste code in current window. Use ctrl shift v for compatibility
   kwargs:
-    keys: ["ctrl+shift+v"]
+    keys: ["super+v"]
+    prepend_whitespace_when_embedded: true
+    # undo_keys: ["ctrl+z"]
+- name: _confluence_unformatted_pasta
+  command_type: keystroke
+  description: Paste text in current window. Uses mac shortcut for unformatted paste in conf.
+  kwargs:
+    keys: ["super+alt+shift+v"]
     prepend_whitespace_when_embedded: true
     # undo_keys: ["ctrl+z"]
 - name: blue
@@ -223,7 +230,8 @@
   kwargs:
     commands:
     - _confluence open braces
-    - pasta
+    # - pasta
+    - _confluence_unformatted_pasta
     - _confluence close braces
 - name: find
   command_type: sublime_find
