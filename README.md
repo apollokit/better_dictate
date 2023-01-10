@@ -15,3 +15,8 @@ A tool for general purpose dictation on a desktop box
 - In a second terminal window:
     - `cd better_dictate/frontend`
     - `./run.sh`
+
+
+## TODO
+
+make sure all procs go down when ctrl+c used to kill from terminal
