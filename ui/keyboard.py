@@ -50,6 +50,7 @@ class KeyboardManager():
             Usually nothing, but False when the thread should be shut down
         """
         keystring = str(key)
+        # print(keystring)
 
         # get rid of single 's when it's a letter keystroke
         if 'Key' not in keystring:

@@ -110,5 +110,6 @@
 "dash": "-"
 "cadmium": "CAD"
 "ai to": "ai2"
-" comma ": ", "
+# use "chameleon" for comma
+" chameleon": "," 
 "question mark": "?"
