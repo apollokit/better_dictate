@@ -1,2 +1,2 @@
 source env/source_virtualenv
-python dictate.py go
+python3 dictate.py go

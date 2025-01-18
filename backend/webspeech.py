@@ -28,19 +28,17 @@ def do_webspeech(
         raw_stt_output_q: contains output string text from the webspeech
             speech to text engine.
     """
-    event_loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(event_loop)
 
-    async def webspeech_transact(websocket, path):
+    shutdown_event = asyncio.Event()
 
+    async def webspeech_transact(websocket):
         logger.info("Webspeech server started")
-        shutdown = False
 
         # whether or not webspeech in browser has been put to sleep
         # the thread will take action to keep these two aligned
         webspeech_sleeping = app_mngr.sleeping
 
-        while True and not shutdown:
+        while not shutdown_event.is_set():
             try:
                 # msg = json.loads(await websocket.recv())
                 raw_msg = await asyncio.wait_for(websocket.recv(),
@@ -89,24 +87,29 @@ def do_webspeech(
                     await websocket.send('{"cmd": "start"}')
                     webspeech_sleeping = False
 
-                # shutdown if we received the signal
-                if app_mngr.quitting:
-                    logger.info("saw shutdown") 
-                    shutdown = True
-                    stop_realtime_server()
+            # shutdown if we received the signal
+            if app_mngr.quitting:
+                # todo: this currently doesn't work on darwin because nothing calls
+                #  app_mngr's signal_quit() method
+                logger.info("saw shutdown") 
+                shutdown_event.set()
 
     # Code to set up and tear down the server
 
-    start_server = websockets.serve(webspeech_transact, host, port)
+    async def run_server():
+        # Start the server
+        async with websockets.serve(webspeech_transact, host, port):
+            logger.info(f"Webspeech server listening on {host}:{port}")
+            # Keep the server running until shutdown event seen
+            await shutdown_event.wait()
+            logger.info("Server event loop terminating")
 
-    # The method of stopping the server below is from https://www.programcreek.com/python/?code=aaugustin%2Fdjango-userlog%2Fdjango-userlog-master%2Fuserlog%2Ftests.py
-    stop_server = asyncio.Future(loop=event_loop)
-    stop_realtime_server = lambda: event_loop.call_soon_threadsafe(
-        lambda: stop_server.set_result(True))
 
-    realtime_server = event_loop.run_until_complete(start_server)
-    event_loop.run_until_complete(stop_server)
-    realtime_server.close()
-    event_loop.run_until_complete(realtime_server.wait_closed())
+    # Start the asyncio loop in a separate thread
+    def start_event_loop():
+        asyncio.run(run_server())
 
-    event_loop.close() 
+    thread = threading.Thread(target=start_event_loop, daemon=True)
+    thread.start()
+    thread.join()
+    logger.info("Webspeech thread terminated")
