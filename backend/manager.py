@@ -90,7 +90,7 @@ class AppManager:
 
         logger.info("Manager thread ready")
         # the main thread loop. Go forever.
-        while True:
+        while not self.quitting:
             current_time = datetime.utcnow()
             if not self.sleeping and (
                     current_time - self._last_interaction_timestamp 

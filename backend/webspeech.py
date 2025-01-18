@@ -91,7 +91,7 @@ def do_webspeech(
             if app_mngr.quitting:
                 # todo: this currently doesn't work on darwin because nothing calls
                 #  app_mngr's signal_quit() method
-                logger.info("saw shutdown") 
+                logger.info("saw shutdown signal in webspeech thread") 
                 shutdown_event.set()
 
     # Code to set up and tear down the server

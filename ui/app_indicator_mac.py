@@ -93,7 +93,6 @@ def menu_bar_job(menu_command_to_queue: Queue):
 
     app.exec_()
 
-
 class MenuBarManager:
     def __init__(self):
         # queue to send commands to the menu bar proc
@@ -121,8 +120,8 @@ class MenuBarManager:
         # todo make sure queue is clear, per https://docs.python.org/3/library/multiprocessing.html#programming-guidelines
         # todo throw error if already joined
         self._menu_bar_proc.join()
-
         self._manager_thread.join()
+        logger.info('MenuBarManager process and thread terminated')
 
     def do_manage(self):
         while True:
@@ -143,6 +142,10 @@ class MenuBarManager:
                     self._menu_command_to_queue.put('active')
             
             self._last_app_mngr_state_sleep = app_mngr.sleeping
+
+            # the user has selected to quite from the UI, so kill the overall app
+            if not self._menu_bar_proc.is_alive():
+                app_mngr.signal_quit()
 
             time.sleep(0.01)
 
