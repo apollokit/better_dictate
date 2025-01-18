@@ -76,8 +76,6 @@ def menu_bar_job(menu_command_to_queue: Queue):
 
     # Create the menu
     menu = QMenu()
-    action = QAction("A menu item")
-    menu.addAction(action)
 
     # Add a Quit option to the menu.
     quit = QAction("Quit")
